@@ -91,7 +91,7 @@ You get MCP tools and skill guidance, but no auto-redirect. You'll need to set t
 └── reason.md
 ```
 
-You can grab these from the `skills/lej-pp-search/` folder in this repo.
+You can grab these from the `plugins/lej-pp-search/skills/lej-pp-search/` folder in this repo.
 
 Since there's no auto-redirect, you'll need to invoke the skill with `/lej-pp-search` or explicitly ask Claude to use Perplexity tools when searching.
 
@@ -174,7 +174,7 @@ LLMs search like humans with confirmation bias - they look for evidence to suppo
 
 ## Need Help?
 
-Run `/lej-pp-search` anytime to see usage info and available options.
+Run `/lej-pp-search:help` anytime to see usage info and available options.
 
 ## Uninstall
 

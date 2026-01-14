@@ -1,11 +1,13 @@
 {
+  "description": "LEJ PP Search hooks - Redirects WebSearch to Perplexity tools for better discovery-based search",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'When asked to research or look up current information, use Perplexity MCP tools (perplexity_search, perplexity_ask, perplexity_research, perplexity_reason) instead of built-in WebSearch. Perplexity discovers new information rather than confirming existing knowledge.'"
+            "command": "echo 'When asked to research or look up current information, use Perplexity MCP tools (perplexity_search, perplexity_ask, perplexity_research, perplexity_reason) instead of built-in WebSearch. Perplexity discovers new information rather than confirming existing knowledge.'",
+            "timeout": 10
           }
         ]
       }
@@ -16,7 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/block-websearch.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/block-websearch.sh",
+            "timeout": 10
           }
         ]
       }

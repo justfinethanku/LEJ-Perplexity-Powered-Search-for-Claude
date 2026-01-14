@@ -3,7 +3,8 @@
   "version": "1.0.1",
   "description": "Perplexity-powered search for discovering current information instead of confirming existing knowledge",
   "author": {
-    "name": "Limited Edition Jonathan"
+    "name": "Limited Edition Jonathan",
+    "email": "Jon@AICRED.io"
   },
   "repository": "https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude",
   "license": "MIT",
