@@ -5,7 +5,7 @@
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
-# Default to true (auto-redirect enabled) if not set
+# Check if auto-redirect is disabled
 AUTO_REDIRECT=$(jq -r '.environmentVariables.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null)
 
 if [[ "$AUTO_REDIRECT" == "false" ]]; then
@@ -21,7 +21,33 @@ EOF
   exit 0
 fi
 
-# Block WebSearch and redirect to Perplexity (using exit 2 for reliability)
+# Check if Perplexity API key is configured
+API_KEY=$(jq -r '.environmentVariables.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
+
+if [[ -z "$API_KEY" ]]; then
+  # No API key - block and ask user what they want to do
+  cat << 'EOF' >&2
+⚠️ Perplexity API key is not configured.
+
+You MUST use AskUserQuestion to ask the user how they want to proceed. Present these options:
+
+**Question:** "Perplexity API key not configured. How would you like to proceed?"
+**Header:** "Search"
+
+**Options:**
+1. "Use WebSearch instead" - Description: "Fall back to standard web search for this session"
+2. "Set up Perplexity API" - Description: "Configure your API key now (run /lej-pp-search:setup)"
+3. "Get manual search prompt" - Description: "I'll format a query you can paste into perplexity.ai"
+
+**Based on user choice:**
+- If "Use WebSearch instead": Run /lej-pp-search:disable-redirect, then retry the original search using WebSearch
+- If "Set up Perplexity API": Run /lej-pp-search:setup
+- If "Get manual search prompt": Format the original search query nicely and tell the user to paste it at https://perplexity.ai, then paste the results back here
+EOF
+  exit 2
+fi
+
+# API key exists - block WebSearch and redirect to Perplexity
 cat << 'EOF' >&2
 WebSearch is disabled. Use Perplexity tools instead for better results with citations and real-time information.
 

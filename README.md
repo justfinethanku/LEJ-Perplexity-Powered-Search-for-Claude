@@ -44,7 +44,15 @@ This is the full experience. A few quick steps and you're done.
 
 The `/` is important - it tells Claude this is a slash command, not a question.
 
-**Step 4:** Add your API key to `~/.claude/settings.json`:
+**Step 4:** Run the setup command:
+
+```
+/lej-pp-search:setup
+```
+
+This will walk you through adding your API key safely.
+
+Or manually add it to `~/.claude/settings.json`:
 
 ```json
 {
@@ -53,8 +61,6 @@ The `/` is important - it tells Claude this is a slash command, not a question.
   }
 }
 ```
-
-Or just tell Claude "I need to set my Perplexity API key" and it'll help you add it.
 
 ---
 

@@ -112,6 +112,7 @@ Frame queries to **discover**, not **confirm**:
 ## Available Commands
 
 - `/lej-pp-search:help` - Show this help
+- `/lej-pp-search:setup` - Configure your Perplexity API key
 - `/lej-pp-search:disable-redirect` - Disable auto-redirect
 - `/lej-pp-search:enable-redirect` - Enable auto-redirect
 
