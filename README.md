@@ -123,6 +123,21 @@ We ran a head-to-head comparison using professional filmmaking queries (camera s
 
 Both tools provided accurate information for these queries. The main differences: Perplexity returns faster with inline citations and structured answers. WebSearch returns more links but takes longer to synthesize.
 
+### Cost
+
+| Service | Per Query | Notes |
+|---------|-----------|-------|
+| Anthropic WebSearch | $0.01 | Plus token costs for processing results |
+| Perplexity sonar-pro | ~$0.014 | All-inclusive (search + synthesis) |
+
+Costs are roughly equivalent. The real advantage is speed and the pre-synthesized response format.
+
+## The Superpower
+
+Here's the thing: Perplexity is good at crawling the web and synthesizing current information. Claude is good at reasoning, planning, and knowing what questions to ask. Together, they're better than either alone.
+
+Claude guides the search with intelligent queries. Perplexity returns fresh, cited results. Claude interprets and applies them to your actual problem. It's like giving Claude a research assistant that never gets tired and always cites its sources.
+
 ## Need Help?
 
 Run `/lej-pp-search:help` anytime to see usage info and available options.
