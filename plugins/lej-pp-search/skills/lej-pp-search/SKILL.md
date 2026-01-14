@@ -112,6 +112,23 @@ Include images in the response. Use when visual content is relevant.
 - Use for queries about visual topics (UI, design, places, products)
 - Skip for code, documentation, or text-focused queries
 
+**Presenting images to users:**
+
+When images are returned, present them as clickable markdown links:
+
+```markdown
+**Images:**
+- [Golden Gate Bridge at sunset](https://media.istockphoto.com/...)
+- [Aerial view of the bridge](https://media.istockphoto.com/...)
+```
+
+The response includes:
+- `image_url` — Direct link to the image
+- `origin_url` — Source page
+- `title` — Description (use this as the link text)
+
+Format: `[title](image_url)` — Makes them clickable in VSCode
+
 ### reasoning_effort (for sonar-reasoning-pro)
 
 Controls reasoning depth. Only works with `sonar-reasoning-pro` model.
