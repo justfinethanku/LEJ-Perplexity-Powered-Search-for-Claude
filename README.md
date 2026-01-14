@@ -29,7 +29,7 @@ This is the full experience. One command, and you're done.
 **Step 2:** Install the plugin by running this command inside Claude Code:
 
 ```
-/plugin install justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
+/plugin install https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
 ```
 
 **How to run that command:**
