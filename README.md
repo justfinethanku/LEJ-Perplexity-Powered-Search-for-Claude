@@ -29,13 +29,13 @@ This is the full experience. A few quick steps and you're done.
 **Step 2:** Add the marketplace:
 
 ```
-/plugin marketplace add https://raw.githubusercontent.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude/main/marketplace.json
+/plugin marketplace add justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
 ```
 
 **Step 3:** Install the plugin:
 
 ```
-/plugin install lej-pp-search
+/plugin install lej-pp-search@lej-marketplace
 ```
 
 **How to run these commands:**
@@ -180,7 +180,7 @@ Run `/lej-pp-search` anytime to see usage info and available options.
 
 **Quick way** (keeps your API key for easy reinstall):
 ```
-/plugin uninstall lej-pp-search
+/plugin uninstall lej-pp-search@lej-marketplace
 ```
 
 **Full cleanup** (nukes everything including the API key):

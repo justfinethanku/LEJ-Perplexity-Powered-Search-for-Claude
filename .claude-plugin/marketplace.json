@@ -1,0 +1,15 @@
+{
+  "name": "lej-marketplace",
+  "owner": {
+    "name": "Limited Edition Jonathan"
+  },
+  "metadata": {
+    "description": "Plugins by Limited Edition Jonathan"
+  },
+  "plugins": [
+    {
+      "name": "lej-pp-search",
+      "source": "./"
+    }
+  ]
+}
