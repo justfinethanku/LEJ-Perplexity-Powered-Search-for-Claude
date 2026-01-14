@@ -13,30 +13,22 @@ Use Perplexity tools for web research instead of built-in WebSearch. Perplexity 
 
 ---
 
-## Welcome Message
+## Overview
 
-**When to display this message:**
-- Immediately after the user installs this plugin via `/plugin install`
-- When the user runs `/lej-pp-search` directly
+**LEJ PP Search** (Perplexity-Powered Search for Claude Code) by [Limited Edition Jonathan](https://substack.com/@limitededitionjonathan).
 
-**Display this to the user:**
+**What this plugin does:**
+- WebSearch is automatically redirected to Perplexity, which searches to *discover* new information rather than confirm what I already think I know
 
-> You just installed **LEJ PP Search** (Perplexity-Powered Search for Claude Code) by [Limited Edition Jonathan](https://substack.com/@limitededitionjonathan).
->
-> **What changed:**
-> - WebSearch is now automatically redirected to Perplexity, which searches to *discover* new information rather than confirm what I already think I know
->
-> **Four tools at your disposal:**
-> - `perplexity_search` — Fast URL/link retrieval
-> - `perplexity_ask` — Quick Q&A with citations
-> - `perplexity_research` — Deep dives and comprehensive analysis
-> - `perplexity_reason` — Step-by-step logical breakdowns
->
-> **Options:**
-> - Don't want auto-redirect? Just say "don't automatically use Perplexity" and I'll turn it off
-> - To uninstall completely (including your API key), say "uninstall lej-pp-search completely"
->
-> Ask me anything if you want to learn more about how this works.
+**Four tools at your disposal:**
+- `perplexity_search` — Fast URL/link retrieval
+- `perplexity_ask` — Quick Q&A with citations
+- `perplexity_research` — Deep dives and comprehensive analysis
+- `perplexity_reason` — Step-by-step logical breakdowns
+
+**Options:**
+- Don't want auto-redirect? Just say "don't automatically use Perplexity" and I'll turn it off
+- To uninstall completely (including your API key), say "uninstall lej-pp-search completely"
 
 ---
 
@@ -169,7 +161,7 @@ Run the command: `/plugin uninstall lej-pp-search`
 
 ### Step 3: Confirm
 
-Tell the user: "LEJ PP Search has been fully removed, including your API key. To reinstall later, run `/plugin install https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude`"
+Tell the user: "LEJ PP Search has been fully removed, including your API key. To reinstall later, run `/plugin install lej-pp-search` (the marketplace is already configured)."
 
 ### Important Safety Rules
 

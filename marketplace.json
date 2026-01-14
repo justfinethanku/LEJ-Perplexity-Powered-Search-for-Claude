@@ -1,0 +1,10 @@
+{
+  "name": "lej-marketplace",
+  "description": "Plugins by Limited Edition Jonathan",
+  "plugins": [
+    {
+      "name": "lej-pp-search",
+      "source": "./"
+    }
+  ]
+}

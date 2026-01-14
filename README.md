@@ -22,25 +22,39 @@ This plugin swaps out WebSearch for Perplexity automatically. You get better res
 
 ## Setup: Claude Code (CLI/VSCode)
 
-This is the full experience. One command, and you're done.
+This is the full experience. A few quick steps and you're done.
 
 **Step 1:** Get a Perplexity API key at https://www.perplexity.ai/account/api/group
 
-**Step 2:** Install the plugin by running this command inside Claude Code:
+**Step 2:** Add the marketplace:
 
 ```
-/plugin install https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
+/plugin marketplace add https://raw.githubusercontent.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude/main/marketplace.json
 ```
 
-**How to run that command:**
-- **VSCode**: Open Claude Code in the sidebar, start a conversation, then type the command directly into the chat
-- **Terminal**: Run `claude` to start a session, then type the command at the prompt
+**Step 3:** Install the plugin:
+
+```
+/plugin install lej-pp-search
+```
+
+**How to run these commands:**
+- **VSCode**: Open Claude Code in the sidebar, start a conversation, then type the commands directly into the chat
+- **Terminal**: Run `claude` to start a session, then type the commands at the prompt
 
 The `/` is important - it tells Claude this is a slash command, not a question.
 
-**Step 3:** Claude will ask for your API key. Paste it in.
+**Step 4:** Add your API key to `~/.claude/settings.json`:
 
-That's it. No config files to edit, no environment variables to set up manually.
+```json
+{
+  "environmentVariables": {
+    "PERPLEXITY_API_KEY": "your_key_here"
+  }
+}
+```
+
+Or just tell Claude "I need to set my Perplexity API key" and it'll help you add it.
 
 ---
 

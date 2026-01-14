@@ -7,9 +7,5 @@
   },
   "repository": "https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude",
   "license": "MIT",
-  "keywords": ["perplexity", "search", "research", "discovery"],
-  "components": {
-    "skills": ["skills/"],
-    "hooks": ["hooks/"]
-  }
+  "keywords": ["perplexity", "search", "research", "discovery"]
 }
