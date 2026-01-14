@@ -5,6 +5,23 @@ All notable changes to LEJ PP Search will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-01-14
+
+### Added
+
+- Full parameter documentation for Perplexity API
+- `web_search_options.search_context_size` support (low/medium/high)
+- `search_recency_filter` support (day/week/month/year)
+- `return_images` support for visual queries
+- `reasoning_effort` support for sonar-reasoning-pro model
+- Parameter Selection Guide for different query types
+- Example calls for each use case
+
+### Changed
+
+- Updated SKILL.md with comprehensive parameter guidance
+- Added cost breakdowns for each context size level
+
 ## [2.0.0] - 2025-01-14
 
 ### Changed

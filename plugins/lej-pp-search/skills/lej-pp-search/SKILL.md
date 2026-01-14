@@ -15,28 +15,30 @@ Use Perplexity for web research instead of built-in WebSearch. Perplexity search
 
 ## How to Call Perplexity
 
-All Perplexity calls use the same API endpoint with different models. The API key is stored in `~/.claude/settings.json` under `environmentVariables.PERPLEXITY_API_KEY`.
+All Perplexity calls use the same API endpoint. The API key is stored in `~/.claude/settings.json` under `environmentVariables.PERPLEXITY_API_KEY`.
 
-### Get the API Key
-
-```bash
-jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json
-```
-
-### Make the API Call
+### Basic Call
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
   -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
   -H "Content-Type: application/json" \
-  -d '{"model": "MODEL_NAME", "messages": [{"role": "user", "content": "YOUR_QUERY"}]}'
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY"}]}'
 ```
 
-Replace `MODEL_NAME` with one of:
-- `sonar` — Fast, cheap basic search
-- `sonar-pro` — Better quality Q&A with citations
-- `sonar-reasoning-pro` — Step-by-step logical analysis
-- `sonar-deep-research` — Comprehensive research (slow, expensive)
+### Full Call with Parameters
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "MODEL_NAME",
+    "messages": [{"role": "user", "content": "YOUR_QUERY"}],
+    "web_search_options": {"search_context_size": "medium"},
+    "search_recency_filter": "month"
+  }'
+```
 
 ---
 
@@ -45,11 +47,125 @@ Replace `MODEL_NAME` with one of:
 | Model | Use Case | Cost | Speed |
 |-------|----------|------|-------|
 | `sonar` | Quick lookups, basic facts | ~$0.005 | Fast |
-| `sonar-pro` | Quality Q&A with citations | ~$0.008 | Fast |
+| `sonar-pro` | Quality Q&A with citations (DEFAULT) | ~$0.008 | Fast |
 | `sonar-reasoning-pro` | Complex analysis, comparisons | ~$0.01 | Moderate |
 | `sonar-deep-research` | Comprehensive reports | ~$1+ | Slow (30s-5min) |
 
 **Default to `sonar-pro`** for most searches. Only use `sonar-deep-research` when explicitly asked for deep/comprehensive research.
+
+---
+
+## Search Parameters
+
+### search_context_size (via web_search_options)
+
+Controls how many search results are included in the context. **Higher = more thorough but more expensive.**
+
+| Value | Cost Impact | When to Use |
+|-------|-------------|-------------|
+| `"low"` | ~$0.006 | Quick facts, simple lookups, cost-conscious queries |
+| `"medium"` | ~$0.010 | DEFAULT - balanced depth for most questions |
+| `"high"` | ~$0.014 | Complex topics, comparisons, when thoroughness matters |
+
+**Usage:**
+```json
+{"web_search_options": {"search_context_size": "high"}}
+```
+
+**Guidance:**
+- Use `"low"` for simple factual queries ("What version is X?")
+- Use `"medium"` (default) for general questions
+- Use `"high"` for comparisons, analysis, or when user asks for "thorough" or "comprehensive" info
+
+### search_recency_filter
+
+Filters search results by time. Use when freshness matters.
+
+| Value | When to Use |
+|-------|-------------|
+| `"day"` | Breaking news, today's events, live data |
+| `"week"` | Recent updates, this week's news |
+| `"month"` | Recent releases, monthly trends |
+| `"year"` | Annual summaries, recent but not urgent |
+| (omit) | All time - when recency doesn't matter |
+
+**Usage:**
+```json
+{"search_recency_filter": "week"}
+```
+
+**Guidance:**
+- Use `"day"` or `"week"` for news, current events, stock prices
+- Use `"month"` for recent software releases, API changes
+- Omit for stable topics (tutorials, concepts, documentation)
+
+### return_images
+
+Include images in the response. Use when visual content is relevant.
+
+**Usage:**
+```json
+{"return_images": true}
+```
+
+**Guidance:**
+- Use for queries about visual topics (UI, design, places, products)
+- Skip for code, documentation, or text-focused queries
+
+### reasoning_effort (for sonar-reasoning-pro)
+
+Controls reasoning depth. Only works with `sonar-reasoning-pro` model.
+
+| Value | When to Use |
+|-------|-------------|
+| `"low"` | Simple comparisons, quick analysis |
+| `"medium"` | DEFAULT - balanced reasoning |
+| `"high"` | Complex multi-factor decisions, deep analysis |
+
+**Usage:**
+```json
+{"model": "sonar-reasoning-pro", "reasoning_effort": "high"}
+```
+
+---
+
+## Example Calls
+
+### Quick lookup (low context)
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest version of Node.js?"}], "web_search_options": {"search_context_size": "low"}}'
+```
+
+### Recent news (recency filter)
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "Latest AI news"}], "search_recency_filter": "day"}'
+```
+
+### Thorough comparison (high context + reasoning)
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "Compare PostgreSQL vs MySQL for a new project"}], "web_search_options": {"search_context_size": "high"}, "reasoning_effort": "high"}'
+```
+
+### Deep research (comprehensive)
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-deep-research", "messages": [{"role": "user", "content": "Comprehensive analysis of WebAssembly adoption"}]}' --max-time 300
+```
 
 ---
 
@@ -61,7 +177,9 @@ All responses include:
 {
   "choices": [{"message": {"content": "The answer with [1] inline citations"}}],
   "citations": ["https://source1.com", "https://source2.com"],
-  "search_results": [{"title": "...", "url": "...", "snippet": "..."}]
+  "search_results": [{"title": "...", "url": "...", "snippet": "..."}],
+  "images": ["url1", "url2"],  // if return_images: true
+  "usage": {"search_context_size": "medium", "cost": {"total_cost": 0.02}}
 }
 ```
 
@@ -69,36 +187,32 @@ All responses include:
 
 ---
 
-## Example Calls
+## Parameter Selection Guide
 
-### Quick Q&A (sonar-pro)
+**For simple questions:**
+- Model: `sonar-pro`
+- Context: `low`
+- No recency filter
 
-```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest version of React?"}]}' | jq .
-```
+**For general research:**
+- Model: `sonar-pro`
+- Context: `medium` (default)
+- Recency: based on topic freshness
 
-### Reasoning/Analysis (sonar-reasoning-pro)
+**For comparisons/analysis:**
+- Model: `sonar-reasoning-pro`
+- Context: `high`
+- Reasoning: `medium` or `high`
 
-```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "Compare Next.js and Remix for a new project"}]}' | jq .
-```
+**For comprehensive reports:**
+- Model: `sonar-deep-research`
+- Context: (handled by model)
+- Add `--max-time 300`
 
-### Deep Research (sonar-deep-research)
-
-```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "sonar-deep-research", "messages": [{"role": "user", "content": "Comprehensive overview of WebAssembly adoption in 2025"}]}' --max-time 300 | jq .
-```
-
-**Note:** `sonar-deep-research` can take 30 seconds to 5 minutes. Use `--max-time 300` to allow for longer responses.
+**For breaking news:**
+- Model: `sonar-pro`
+- Context: `medium`
+- Recency: `day` or `week`
 
 ---
 
