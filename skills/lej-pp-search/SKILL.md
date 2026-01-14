@@ -169,7 +169,7 @@ Run the command: `/plugin uninstall lej-pp-search`
 
 ### Step 3: Confirm
 
-Tell the user: "LEJ PP Search has been fully removed, including your API key. To reinstall later, run `/plugin install justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude`"
+Tell the user: "LEJ PP Search has been fully removed, including your API key. To reinstall later, run `/plugin install https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude`"
 
 ### Important Safety Rules
 

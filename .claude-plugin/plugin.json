@@ -1,11 +1,15 @@
 {
   "name": "lej-pp-search",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Perplexity-powered search for discovering current information instead of confirming existing knowledge",
   "author": {
     "name": "Limited Edition Jonathan"
   },
   "repository": "https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude",
   "license": "MIT",
-  "keywords": ["perplexity", "search", "research", "discovery"]
+  "keywords": ["perplexity", "search", "research", "discovery"],
+  "components": {
+    "skills": ["skills/"],
+    "hooks": ["hooks/"]
+  }
 }
