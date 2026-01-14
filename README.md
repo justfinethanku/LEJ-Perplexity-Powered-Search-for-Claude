@@ -97,6 +97,32 @@ LLMs search like humans with confirmation bias - they look for evidence to suppo
 - Information that contradicts outdated training data
 - Stuff Claude doesn't know it doesn't know
 
+## Benchmark: Perplexity vs WebSearch
+
+We ran a head-to-head comparison using professional filmmaking queries (camera specs, workflows, technical comparisons).
+
+### Speed
+
+| Query | Perplexity | WebSearch |
+|-------|------------|-----------|
+| Sony FX9 II specs | 5.5s | 34.5s |
+| Blackmagic LOG workflow | 7.8s | 44.5s |
+| RED vs ARRI dynamic range | 7.0s | 29.7s |
+| **Average** | **6.8s** | **36.2s** |
+
+**Perplexity is 5x faster** on average.
+
+### Quality
+
+| Metric | Perplexity | WebSearch |
+|--------|------------|-----------|
+| Citations per query | 6-15 inline | 10-20 links |
+| Source freshness | Consistently 2025-2026 | Variable |
+| Answer structure | Highly synthesized | More raw links |
+| Technical depth | Specific numbers & tables | Contextual summaries |
+
+Both tools provided accurate information for these queries. The main differences: Perplexity returns faster with inline citations and structured answers. WebSearch returns more links but takes longer to synthesize.
+
 ## Need Help?
 
 Run `/lej-pp-search:help` anytime to see usage info and available options.
