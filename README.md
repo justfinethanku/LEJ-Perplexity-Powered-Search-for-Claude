@@ -2,24 +2,33 @@
 
 **Perplexity-Powered Search for Claude Code**
 
-Here's the deal: Claude's built-in web search has a confirmation bias problem. It searches to *confirm* what it already thinks it knows from training data. Perplexity does the opposite - it searches to *discover* what it doesn't know.
+Here's the deal: Claude's built-in web search has a confirmation bias problem. It searches to *confirm* what it already thinks it knows from training data. Perplexity does the opposite - it searches to *discover* what it doesn't know. This plugin swaps one for the other automatically. 5x faster, better citations, and your research actually gets saved.
 
-This plugin swaps out WebSearch for Perplexity automatically. You get better results for anything that changes faster than Claude's training data can keep up with.
+## What's Inside
+
+- [How It Works](#how-it-works) - Auto-redirects WebSearch to Perplexity
+- [The Four Models](#the-four-models) - From quick lookups to deep research
+- [Toggling Auto-Redirect](#toggling-auto-redirect) - Turn it on/off with plain English
+- [Why This Matters](#why-this-matters) - The confirmation bias thing explained
+- [Benchmark](#benchmark-perplexity-vs-websearch) - Actual speed and quality numbers
+- [Research Persistence](#research-persistence) - Every search saved to markdown
+
+---
 
 ## How It Works
 
 When you ask Claude to search for something:
-1. The plugin blocks the built-in WebSearch
-2. Claude calls the Perplexity API directly via curl
-3. Returns results with actual citations
+1. Plugin blocks the built-in WebSearch
+2. Claude calls Perplexity directly via curl
+3. You get results with actual citations
 
-No MCP server needed. Just direct API calls using your Perplexity API key stored in `~/.claude/settings.json`.
+No MCP server. Just direct API calls using your Perplexity key stored in `~/.claude/settings.json`.
 
 ---
 
 ## Setup
 
-**Step 1:** Get a Perplexity API key at https://www.perplexity.ai/account/api/group
+**Step 1:** Grab a Perplexity API key at https://www.perplexity.ai/account/api/group
 
 **Step 2:** Add the marketplace:
 
@@ -27,27 +36,25 @@ No MCP server needed. Just direct API calls using your Perplexity API key stored
 /plugin marketplace add justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
 ```
 
-**Step 3:** Install the plugin:
+**Step 3:** Install:
 
 ```
 /plugin install lej-pp-search@lej-marketplace
 ```
 
-**How to run these commands:**
-- **VSCode**: Open Claude Code in the sidebar, start a conversation, then type the commands directly into the chat
-- **Terminal**: Run `claude` to start a session, then type the commands at the prompt
+**Where to run these:**
+- **VSCode**: Open Claude Code in the sidebar, type commands in the chat
+- **Terminal**: Run `claude`, then type at the prompt
 
-The `/` is important - it tells Claude this is a slash command, not a question.
+The `/` matters - tells Claude it's a command, not a question.
 
-**Step 4:** Run the setup command:
+**Step 4:** Run setup:
 
 ```
 /lej-pp-search:setup
 ```
 
-This will walk you through adding your API key safely.
-
-Or manually add it to `~/.claude/settings.json`:
+Walks you through adding your API key. Or just add it manually to `~/.claude/settings.json`:
 
 ```json
 {
@@ -72,7 +79,7 @@ Or manually add it to `~/.claude/settings.json`:
 | `sonar-reasoning-pro` | Step-by-step logical analysis | ~$0.01 |
 | `sonar-deep-research` | Comprehensive reports | ~$1+ |
 
-Most of the time Claude will use `sonar-pro`. The skill guides Claude to pick the right model based on what you're asking for.
+Claude uses `sonar-pro` most of the time. The skill guides it to pick the right model based on what you're asking.
 
 ## Toggling Auto-Redirect
 
@@ -80,26 +87,26 @@ Don't want WebSearch blocked? Just tell Claude:
 
 > "Hey Claude, don't automatically use Perplexity"
 
-Claude will disable auto-redirect. WebSearch works normally, and Perplexity is still available when you want it.
+Done. WebSearch works normally again, Perplexity's still there when you want it.
 
-Want it back on? Just say:
+Want it back on?
 
 > "Turn auto-redirect back on"
 
-No config files to edit. Just talk to Claude.
+No config files. Just talk to Claude.
 
 ## Why This Matters
 
-LLMs search like humans with confirmation bias - they look for evidence to support what they already believe. Perplexity is architecturally different. It searches first, then synthesizes, which means it's actually looking for:
+LLMs search like humans with confirmation bias - looking for evidence to support what they already believe. Perplexity is architecturally different. Searches first, synthesizes second. Which means it's actually looking for:
 
 - Current documentation (not the cached version from 8 months ago)
 - Recent API changes
-- Information that contradicts outdated training data
+- Info that contradicts outdated training data
 - Stuff Claude doesn't know it doesn't know
 
 ## Benchmark: Perplexity vs WebSearch
 
-We ran a head-to-head comparison using professional filmmaking queries (camera specs, workflows, technical comparisons).
+Ran a head-to-head using professional filmmaking queries (camera specs, workflows, technical comparisons).
 
 ### Speed
 
@@ -110,7 +117,7 @@ We ran a head-to-head comparison using professional filmmaking queries (camera s
 | RED vs ARRI dynamic range | 7.0s | 29.7s |
 | **Average** | **6.8s** | **36.2s** |
 
-**Perplexity is 5x faster** on average.
+**Perplexity is 5x faster.**
 
 ### Quality
 
@@ -121,47 +128,47 @@ We ran a head-to-head comparison using professional filmmaking queries (camera s
 | Answer structure | Highly synthesized | More raw links |
 | Technical depth | Specific numbers & tables | Contextual summaries |
 
-Both tools provided accurate information for these queries. The main differences: Perplexity returns faster with inline citations and structured answers. WebSearch returns more links but takes longer to synthesize.
+Both accurate. Main difference: Perplexity returns faster with inline citations and structured answers. WebSearch gives more links but takes longer to synthesize.
 
 ### Cost
 
 | Service | Per Query | Notes |
 |---------|-----------|-------|
-| Anthropic WebSearch | $0.01 | Plus token costs for processing results |
-| Perplexity sonar-pro | ~$0.014 | All-inclusive (search + synthesis) |
+| Anthropic WebSearch | $0.01 | Plus token costs for processing |
+| Perplexity sonar-pro | ~$0.014 | All-inclusive |
 
-Costs are roughly equivalent. The real advantage is speed and the pre-synthesized response format.
+Roughly equivalent. The real win is speed and the pre-synthesized format.
 
 ## The Superpower
 
-Here's the thing: Perplexity is good at crawling the web and synthesizing current information. Claude is good at reasoning, planning, and knowing what questions to ask. Together, they're better than either alone.
+Thing is, Perplexity is good at crawling the web and synthesizing current info. Claude is good at reasoning, planning, and knowing what questions to ask. Together they're better than either alone.
 
 Claude guides the search with intelligent queries. Perplexity returns fresh, cited results. Claude interprets and applies them to your actual problem. It's like giving Claude a research assistant that never gets tired and always cites its sources.
 
 ## Research Persistence
 
-Every Perplexity search is automatically saved to `.perplexity-research/` in your current directory. Each search creates a markdown file with:
+Every Perplexity search gets saved to `.perplexity-research/` in your current directory. Each search creates a markdown file with:
 
-- The original query
+- Original query
 - Full synthesized answer
 - All citations as clickable links
 - Raw search results with snippets
 
-This means research doesn't disappear when conversation context gets compacted. You can reference past searches, share them, or use them as documentation.
+Research doesn't disappear when conversation context gets compacted. Reference past searches, share them, use them as documentation.
 
 ## Need Help?
 
-Run `/lej-pp-search:help` anytime to see usage info and available options.
+Run `/lej-pp-search:help` anytime.
 
 ## Uninstall
 
-**Quick way** (keeps your API key for easy reinstall):
+**Quick** (keeps API key for easy reinstall):
 ```
 /plugin uninstall lej-pp-search@lej-marketplace
 ```
 
-**Full cleanup** (nukes everything including the API key):
-Just tell Claude "Uninstall lej-pp-search completely" and it'll handle the cleanup.
+**Full cleanup** (nukes everything including the key):
+Tell Claude "Uninstall lej-pp-search completely" and it handles it.
 
 ## License
 
