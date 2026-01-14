@@ -1,6 +1,6 @@
-# perplexity_ask
+# sonar-pro (Ask)
 
-**Quick Q&A with synthesized answers and citations. Uses sonar-pro model.**
+**Quick Q&A with synthesized answers and citations. Default choice for most searches.**
 
 ## When to Use
 
@@ -14,30 +14,26 @@
 
 | Attribute | Value |
 |-----------|-------|
-| Model | sonar-pro |
-| Speed | Moderate |
-| Cost | Moderate |
+| Model | `sonar-pro` |
+| Speed | Fast |
+| Cost | ~$0.008 |
 | Output | Synthesized answer with inline citations |
-| Citations | Array of source URLs |
 
-## Example Usage
+## How to Call
 
-```json
-{
-  "messages": [
-    {"role": "system", "content": "Provide current, accurate information with citations"},
-    {"role": "user", "content": "What are the current best practices for React Server Components in Next.js 15?"}
-  ]
-}
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUESTION_HERE"}]}'
 ```
 
 ## Response
 
-Returns a synthesized answer that:
-- Combines information from multiple sources
-- Includes inline citation markers
-- Provides source URLs in citations array
-- Balances depth with conciseness
+Returns JSON with:
+- `choices[0].message.content` — The synthesized answer with [1] inline citation markers
+- `citations` — Array of source URLs
+- `search_results` — Array of search results with titles, URLs, snippets
 
 ## Best For
 

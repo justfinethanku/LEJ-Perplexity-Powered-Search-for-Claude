@@ -1,12 +1,12 @@
 {
-  "description": "LEJ PP Search hooks - Redirects WebSearch to Perplexity tools for better discovery-based search",
+  "description": "LEJ PP Search hooks - Redirects WebSearch to Perplexity via direct API calls",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'When asked to research or look up current information, use Perplexity MCP tools (perplexity_search, perplexity_ask, perplexity_research, perplexity_reason) instead of built-in WebSearch. Perplexity discovers new information rather than confirming existing knowledge.'",
+            "command": "echo 'When asked to research or look up current information, use Perplexity via curl instead of built-in WebSearch. Call the Perplexity API directly: curl -s -X POST https://api.perplexity.ai/chat/completions with Authorization header using the API key from ~/.claude/settings.json. Use sonar-pro model by default. Perplexity discovers new information rather than confirming existing knowledge.'",
             "timeout": 10
           }
         ]

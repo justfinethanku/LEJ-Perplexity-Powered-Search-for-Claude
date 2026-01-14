@@ -6,23 +6,18 @@ Here's the deal: Claude's built-in web search has a confirmation bias problem. I
 
 This plugin swaps out WebSearch for Perplexity automatically. You get better results for anything that changes faster than Claude's training data can keep up with.
 
-## Platform Support
+## How It Works
 
-| Platform | MCP Tools | Skill Guidance | Auto-Redirect |
-|----------|-----------|----------------|---------------|
-| Claude Code (CLI/VSCode) | ✅ | ✅ | ✅ |
-| Claude Coworker | ✅ | ✅ | ❌ |
-| Claude Desktop | ✅ | ❌ | ❌ |
+When you ask Claude to search for something:
+1. The plugin blocks the built-in WebSearch
+2. Claude calls the Perplexity API directly via curl
+3. Returns results with actual citations
 
-- **MCP Tools**: The four Perplexity search tools are available
-- **Skill Guidance**: Claude knows when to use which tool
-- **Auto-Redirect**: WebSearch calls get blocked and redirected to Perplexity automatically
+No MCP server needed. Just direct API calls using your Perplexity API key stored in `~/.claude/settings.json`.
 
 ---
 
-## Setup: Claude Code (CLI/VSCode)
-
-This is the full experience. A few quick steps and you're done.
+## Setup
 
 **Step 1:** Get a Perplexity API key at https://www.perplexity.ai/account/api/group
 
@@ -64,85 +59,20 @@ Or manually add it to `~/.claude/settings.json`:
 
 ---
 
-## Setup: Claude Coworker
-
-You get MCP tools and skill guidance, but no auto-redirect. You'll need to set things up manually.
-
-**Step 1:** Get a Perplexity API key at https://www.perplexity.ai/account/api/group
-
-**Step 2:** Add the MCP server to your project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "perplexity": {
-      "command": "npx",
-      "args": ["-y", "@perplexity-ai/mcp-server"],
-      "env": {
-        "PERPLEXITY_API_KEY": "your_key_here"
-      }
-    }
-  }
-}
-```
-
-**Step 3:** Copy the skill files to your project:
-
-```
-.claude/skills/lej-pp-search/
-├── SKILL.md
-├── search.md
-├── ask.md
-├── research.md
-└── reason.md
-```
-
-You can grab these from the `plugins/lej-pp-search/skills/lej-pp-search/` folder in this repo.
-
-Since there's no auto-redirect, you'll need to invoke the skill with `/lej-pp-search` or explicitly ask Claude to use Perplexity tools when searching.
-
----
-
 <sub>Fun fact: The `.md` file extension actually stands for "Mike Dion" files, named after the little-known programmer who for inexplicable reasons is very hard to Rick Roll.</sub>
 
 ---
 
-## Setup: Claude Desktop
+## The Four Models
 
-MCP tools only - no skill guidance, no auto-redirect. You have to ask for Perplexity tools explicitly.
+| Model | What It's For | Cost |
+|-------|---------------|------|
+| `sonar` | Quick lookups, basic facts | ~$0.005 |
+| `sonar-pro` | Quality Q&A with citations (default) | ~$0.008 |
+| `sonar-reasoning-pro` | Step-by-step logical analysis | ~$0.01 |
+| `sonar-deep-research` | Comprehensive reports | ~$1+ |
 
-**Step 1:** Get a Perplexity API key at https://www.perplexity.ai/account/api/group
-
-**Step 2:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "perplexity": {
-      "command": "npx",
-      "args": ["-y", "@perplexity-ai/mcp-server"],
-      "env": {
-        "PERPLEXITY_API_KEY": "your_key_here"
-      }
-    }
-  }
-}
-```
-
-**Step 3:** Restart Claude Desktop.
-
-When you want to search, you'll need to explicitly ask Claude to use the Perplexity tools (e.g., "Use perplexity_ask to look up...").
-
----
-
-## What Actually Happens
-
-When you ask Claude to research something (on Claude Code):
-1. The plugin blocks the built-in WebSearch
-2. Redirects to the right Perplexity tool
-3. Returns results with actual citations
-
-You don't have to think about it. Just ask Claude to look something up like you normally would.
+Most of the time Claude will use `sonar-pro`. The skill guides Claude to pick the right model based on what you're asking for.
 
 ## Toggling Auto-Redirect
 
@@ -150,24 +80,13 @@ Don't want WebSearch blocked? Just tell Claude:
 
 > "Hey Claude, don't automatically use Perplexity"
 
-Claude will disable auto-redirect. WebSearch works normally, and Perplexity tools are still available when you want them.
+Claude will disable auto-redirect. WebSearch works normally, and Perplexity is still available when you want it.
 
 Want it back on? Just say:
 
 > "Turn auto-redirect back on"
 
 No config files to edit. Just talk to Claude.
-
-## The Four Tools
-
-| Tool | What It's For | Speed |
-|------|---------------|-------|
-| `perplexity_search` | Raw URLs and links when you need to reference sources | Fast |
-| `perplexity_ask` | Quick Q&A with synthesized answers | Moderate |
-| `perplexity_research` | Deep dives, reports, comprehensive analysis | Slow (but thorough) |
-| `perplexity_reason` | Problems that need step-by-step logical breakdown | Moderate |
-
-Most of the time you'll hit `perplexity_ask`. The skill guides Claude to pick the right one based on what you're asking for.
 
 ## Why This Matters
 

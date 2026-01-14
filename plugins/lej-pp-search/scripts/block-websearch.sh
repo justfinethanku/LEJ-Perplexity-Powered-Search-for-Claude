@@ -1,6 +1,6 @@
 #!/bin/bash
 # block-websearch.sh
-# Intercepts WebSearch calls and redirects Claude to use Perplexity instead
+# Intercepts WebSearch calls and redirects Claude to use Perplexity via curl
 # Can be disabled by setting LEJ_AUTO_REDIRECT=false in ~/.claude/settings.json
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
@@ -47,15 +47,26 @@ EOF
   exit 2
 fi
 
-# API key exists - block WebSearch and redirect to Perplexity
+# API key exists - block WebSearch and tell Claude to use curl
 cat << 'EOF' >&2
-WebSearch is disabled. Use Perplexity tools instead for better results with citations and real-time information.
+WebSearch is blocked. Use Perplexity via curl instead.
 
-Tool selection:
-- perplexity_search: Quick lookup, raw URLs (fast, cheap)
-- perplexity_ask: Q&A with synthesized answer (moderate)
-- perplexity_research: Deep analysis, 2x citations (slow, thorough)
-- perplexity_reason: Logical problems with step-by-step thinking
+**How to search:**
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY_HERE"}]}'
+```
+
+**Model selection:**
+- `sonar` — Fast, cheap (~$0.005)
+- `sonar-pro` — Better quality, default choice (~$0.008)
+- `sonar-reasoning-pro` — Complex analysis (~$0.01)
+- `sonar-deep-research` — Comprehensive reports (~$1+, slow)
+
+**Response format:** Extract `choices[0].message.content` for the answer and `citations` array for sources.
 
 Perplexity searches to DISCOVER new information, not confirm existing knowledge.
 EOF

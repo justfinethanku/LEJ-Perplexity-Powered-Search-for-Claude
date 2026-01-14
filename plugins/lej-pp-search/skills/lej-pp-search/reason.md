@@ -1,6 +1,6 @@
-# perplexity_reason
+# sonar-reasoning-pro (Reason)
 
-**Logical analysis with visible thinking process. Uses sonar-reasoning-pro model.**
+**Logical analysis with step-by-step reasoning. Use for complex comparisons and tradeoff analysis.**
 
 ## When to Use
 
@@ -8,51 +8,41 @@
 - Debugging complex issues
 - Architecture decisions with tradeoffs
 - When you need to see the reasoning process
-- Analytical questions
+- "Should I use X or Y?" questions
 
 ## Characteristics
 
 | Attribute | Value |
 |-----------|-------|
-| Model | sonar-reasoning-pro |
+| Model | `sonar-reasoning-pro` |
 | Speed | Moderate |
-| Cost | Moderate |
-| Output | `<think>` block + synthesized answer |
-| Citations | Standard citation array |
+| Cost | ~$0.01 |
+| Output | Structured reasoning + synthesized answer |
 
-## Example Usage
+## How to Call
 
-```json
-{
-  "messages": [
-    {"role": "system", "content": "Analyze this problem step by step, showing your reasoning"},
-    {"role": "user", "content": "Given these constraints: 1) Must support 10k concurrent users, 2) Budget under $500/month, 3) Team knows Python but not Go - should we use FastAPI with PostgreSQL or Django with PostgreSQL for our API?"}
-  ]
-}
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "YOUR_ANALYSIS_QUESTION_HERE"}]}'
 ```
 
-## Response Format
+## Response
 
-Returns response with visible reasoning:
+Returns JSON with:
+- `choices[0].message.content` — Structured analysis with reasoning steps
+- `citations` — Array of source URLs
+- `search_results` — Supporting search results
 
-```
-<think>
-Step 1: Analyzing concurrent user requirement...
-Step 2: Evaluating cost constraints...
-Step 3: Considering team expertise...
-...
-</think>
-
-Based on the analysis, FastAPI with PostgreSQL is recommended because...
-[citations]
-```
+The response often includes visible reasoning structure with analysis of different factors and tradeoffs.
 
 ## Best For
 
 - Tradeoff analysis
 - Debugging strategies
 - Architecture decisions
-- "Should I use X or Y?" questions
+- Comparison questions
 - Problems with multiple constraints
 
 ## Prompting Tips

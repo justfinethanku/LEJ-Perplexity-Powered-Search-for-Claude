@@ -1,7 +1,7 @@
 ---
 name: lej-pp-search
 description: Perplexity-powered search for discovering current information. Use instead of built-in web search when you need up-to-date docs, recent changes, or information that may contradict training data.
-allowed-tools: Read, Edit, Write, mcp__perplexity__perplexity_search, mcp__perplexity__perplexity_ask, mcp__perplexity__perplexity_research, mcp__perplexity__perplexity_reason
+allowed-tools: Read, Edit, Write, Bash
 user-invocable: true
 ---
 
@@ -9,55 +9,98 @@ user-invocable: true
 
 **Perplexity-Powered Search for Claude Code**
 
-Use Perplexity tools for web research instead of built-in WebSearch. Perplexity searches to **discover** new information, not to confirm existing knowledge.
+Use Perplexity for web research instead of built-in WebSearch. Perplexity searches to **discover** new information, not to confirm existing knowledge.
 
 ---
 
-## Overview
+## How to Call Perplexity
 
-**LEJ PP Search** (Perplexity-Powered Search for Claude Code) by [Limited Edition Jonathan](https://substack.com/@limitededitionjonathan).
+All Perplexity calls use the same API endpoint with different models. The API key is stored in `~/.claude/settings.json` under `environmentVariables.PERPLEXITY_API_KEY`.
 
-**What this plugin does:**
-- WebSearch is automatically redirected to Perplexity, which searches to *discover* new information rather than confirm what I already think I know
+### Get the API Key
 
-**Four tools at your disposal:**
-- `perplexity_search` — Fast URL/link retrieval
-- `perplexity_ask` — Quick Q&A with citations
-- `perplexity_research` — Deep dives and comprehensive analysis
-- `perplexity_reason` — Step-by-step logical breakdowns
+```bash
+jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json
+```
 
-**Options:**
-- Don't want auto-redirect? Just say "don't automatically use Perplexity" and I'll turn it off
-- To uninstall completely (including your API key), say "uninstall lej-pp-search completely"
+### Make the API Call
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "MODEL_NAME", "messages": [{"role": "user", "content": "YOUR_QUERY"}]}'
+```
+
+Replace `MODEL_NAME` with one of:
+- `sonar` — Fast, cheap basic search
+- `sonar-pro` — Better quality Q&A with citations
+- `sonar-reasoning-pro` — Step-by-step logical analysis
+- `sonar-deep-research` — Comprehensive research (slow, expensive)
 
 ---
 
-## Why Perplexity?
+## Model Selection
 
-LLMs (including Claude) have confirmation bias when searching—looking for evidence to support existing beliefs from training data. Perplexity is architecturally different: it searches first, then synthesizes, making it better for:
+| Model | Use Case | Cost | Speed |
+|-------|----------|------|-------|
+| `sonar` | Quick lookups, basic facts | ~$0.005 | Fast |
+| `sonar-pro` | Quality Q&A with citations | ~$0.008 | Fast |
+| `sonar-reasoning-pro` | Complex analysis, comparisons | ~$0.01 | Moderate |
+| `sonar-deep-research` | Comprehensive reports | ~$1+ | Slow (30s-5min) |
 
-- Up-to-date documentation
-- Recent changes to APIs, frameworks, tools
-- Information that contradicts outdated training data
-- Current best practices
+**Default to `sonar-pro`** for most searches. Only use `sonar-deep-research` when explicitly asked for deep/comprehensive research.
 
-## Tool Selection
+---
 
+## Response Format
+
+All responses include:
+
+```json
+{
+  "choices": [{"message": {"content": "The answer with [1] inline citations"}}],
+  "citations": ["https://source1.com", "https://source2.com"],
+  "search_results": [{"title": "...", "url": "...", "snippet": "..."}]
+}
 ```
-Need raw URLs/links?      → perplexity_search (fast, cheap)
-Quick question?           → perplexity_ask (sonar-pro)
-Deep research/reports?    → perplexity_research (slow, expensive, 2× citations)
-Logical problem/analysis? → perplexity_reason (shows thinking process)
+
+**Always include citations in your response to the user.** Format them as markdown links.
+
+---
+
+## Example Calls
+
+### Quick Q&A (sonar-pro)
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest version of React?"}]}' | jq .
 ```
 
-### Quick Reference
+### Reasoning/Analysis (sonar-reasoning-pro)
 
-| Tool | Speed | Cost | Best For |
-|------|-------|------|----------|
-| `perplexity_search` | Fast | Low | Raw URLs, titles, snippets |
-| `perplexity_ask` | Moderate | Moderate | Synthesized answers + citations |
-| `perplexity_research` | Slow (30s-5min) | High | Deep analysis, comprehensive reports |
-| `perplexity_reason` | Moderate | Moderate | Step-by-step logical analysis |
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "Compare Next.js and Remix for a new project"}]}' | jq .
+```
+
+### Deep Research (sonar-deep-research)
+
+```bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-deep-research", "messages": [{"role": "user", "content": "Comprehensive overview of WebAssembly adoption in 2025"}]}' --max-time 300 | jq .
+```
+
+**Note:** `sonar-deep-research` can take 30 seconds to 5 minutes. Use `--max-time 300` to allow for longer responses.
+
+---
 
 ## Prompting Philosophy
 
@@ -71,101 +114,38 @@ Frame queries to **discover**, not **confirm**:
 ❌ "Confirm X works this way"
 ❌ "Verify that X is correct"
 
-## Tool Details
-
-For detailed usage of each tool:
-- [search.md](search.md) - perplexity_search
-- [ask.md](ask.md) - perplexity_ask
-- [research.md](research.md) - perplexity_research
-- [reason.md](reason.md) - perplexity_reason
-
-## Message Format
-
-All tools use the same parameter schema:
-
-```json
-{
-  "messages": [
-    {"role": "system", "content": "Context or instructions"},
-    {"role": "user", "content": "Your query"}
-  ]
-}
-```
-
-## Response Format
-
-All tools return:
-
-```json
-{
-  "id": "response-id",
-  "model": "model-name",
-  "choices": [{
-    "message": {"role": "assistant", "content": "Response with inline citations"}
-  }],
-  "usage": {"prompt_tokens": 25, "completion_tokens": 347, "total_tokens": 372},
-  "citations": ["url1", "url2", "..."]
-}
-```
-
 ---
 
 ## Auto-Redirect Control
 
-By default, WebSearch calls are automatically blocked and redirected to Perplexity. Users can toggle this behavior.
+By default, WebSearch calls are automatically blocked and redirected to Perplexity.
 
 ### Disabling Auto-Redirect
 
-When the user asks to "stop auto-redirecting", "let WebSearch through", "disable auto-redirect", "don't automatically use Perplexity", or similar:
+When the user asks to "stop auto-redirecting", "let WebSearch through", "disable auto-redirect", or similar:
 
-1. Read the file `~/.claude/settings.json`
-2. Parse the JSON content
-3. Set `environmentVariables.LEJ_AUTO_REDIRECT` to `"false"`
-4. Write the updated JSON back to the file
-5. Confirm: "Auto-redirect disabled. WebSearch works normally now. You can still use Perplexity tools explicitly anytime."
+1. Read `~/.claude/settings.json`
+2. Set `environmentVariables.LEJ_AUTO_REDIRECT` to `"false"`
+3. Write the updated JSON back
+4. Confirm: "Auto-redirect disabled. WebSearch works normally now."
 
 ### Re-enabling Auto-Redirect
 
-When the user asks to "turn auto-redirect back on", "block WebSearch again", "re-enable Perplexity redirect", "use Perplexity automatically", or similar:
+When the user asks to "turn auto-redirect back on" or similar:
 
-1. Read the file `~/.claude/settings.json`
-2. Parse the JSON content
-3. Remove `LEJ_AUTO_REDIRECT` from environmentVariables (or set to `"true"`)
-4. Write the updated JSON back to the file
-5. Confirm: "Auto-redirect re-enabled. WebSearch calls will be redirected to Perplexity."
-
-### Important Safety Rules
-
-- Preserve all other keys in the JSON structure
-- If settings.json doesn't exist, create it with just the environmentVariables section
-- If environmentVariables doesn't exist, create it
+1. Read `~/.claude/settings.json`
+2. Remove `LEJ_AUTO_REDIRECT` or set to `"true"`
+3. Write the updated JSON back
+4. Confirm: "Auto-redirect re-enabled."
 
 ---
 
 ## Uninstall Instructions
 
-When the user asks to "uninstall completely", "fully remove", or "clean uninstall" this plugin:
+When the user asks to "uninstall completely":
 
-### Step 1: Remove API Key
-
-1. Read the file `~/.claude/settings.json`
-2. Parse the JSON content
-3. If `environmentVariables.PERPLEXITY_API_KEY` exists, remove ONLY that key
-4. Do NOT remove any other keys in environmentVariables
-5. Write the updated JSON back to the file
-6. Confirm: "Removed PERPLEXITY_API_KEY from settings"
-
-### Step 2: Uninstall Plugin
-
-Run the command: `/plugin uninstall lej-pp-search`
-
-### Step 3: Confirm
-
-Tell the user: "LEJ PP Search has been fully removed, including your API key. To reinstall later, run `/plugin install lej-pp-search` (the marketplace is already configured)."
-
-### Important Safety Rules
-
-- ONLY remove `PERPLEXITY_API_KEY` - never touch other environment variables
-- If the key doesn't exist, skip step 1 and proceed to uninstall
-- If settings.json doesn't exist, skip step 1 and proceed to uninstall
-- Always preserve the rest of the JSON structure
+1. Read `~/.claude/settings.json`
+2. Remove `PERPLEXITY_API_KEY` from environmentVariables (preserve everything else)
+3. Write the updated JSON back
+4. Run `/plugin uninstall lej-pp-search`
+5. Confirm: "LEJ PP Search fully removed."
