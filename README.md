@@ -138,6 +138,17 @@ Here's the thing: Perplexity is good at crawling the web and synthesizing curren
 
 Claude guides the search with intelligent queries. Perplexity returns fresh, cited results. Claude interprets and applies them to your actual problem. It's like giving Claude a research assistant that never gets tired and always cites its sources.
 
+## Research Persistence
+
+Every Perplexity search is automatically saved to `.perplexity-research/` in your current directory. Each search creates a markdown file with:
+
+- The original query
+- Full synthesized answer
+- All citations as clickable links
+- Raw search results with snippets
+
+This means research doesn't disappear when conversation context gets compacted. You can reference past searches, share them, or use them as documentation.
+
 ## Need Help?
 
 Run `/lej-pp-search:help` anytime to see usage info and available options.

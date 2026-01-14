@@ -204,6 +204,71 @@ All responses include:
 
 ---
 
+## Persisting Research Results
+
+After every Perplexity search, save the results to a markdown file for future reference. This prevents research from being lost when conversation context is compacted.
+
+### How to Save
+
+1. Create `.perplexity-research/` in the current working directory if it doesn't exist
+2. Generate filename: `YYYY-MM-DD-HH-MM-query-slug.md` (e.g., `2025-01-14-15-30-node-js-version.md`)
+3. Write the markdown file with the format below
+
+### Markdown Format
+
+```markdown
+# [Query Title]
+
+**Query:** [The exact query sent to Perplexity]
+**Model:** [sonar-pro | sonar-reasoning-pro | etc.]
+**Date:** [YYYY-MM-DD HH:MM]
+**Cost:** $[total_cost from response]
+
+---
+
+## Answer
+
+[The full content from choices[0].message.content]
+
+---
+
+## Citations
+
+1. [Title or URL](url)
+2. [Title or URL](url)
+...
+
+---
+
+## Search Results
+
+### [Result 1 Title]
+**URL:** [url]
+**Snippet:** [snippet text]
+
+### [Result 2 Title]
+...
+```
+
+### Example Workflow
+
+```bash
+# 1. Run the search
+RESULT=$(curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest Node.js version?"}]}')
+
+# 2. Create directory if needed
+mkdir -p .perplexity-research
+
+# 3. Save to file (Claude formats and writes the markdown)
+```
+
+After saving, tell the user: "Research saved to `.perplexity-research/[filename].md`"
+
+---
+
 ## Parameter Selection Guide
 
 **For simple questions:**
