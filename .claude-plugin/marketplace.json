@@ -9,7 +9,8 @@
   "plugins": [
     {
       "name": "lej-pp-search",
-      "source": "./"
+      "source": "./plugins/lej-pp-search",
+      "description": "Perplexity-powered search for discovering current information instead of confirming existing knowledge"
     }
   ]
 }
