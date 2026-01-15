@@ -5,6 +5,27 @@ All notable changes to LEJ PP Search will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-01-14
+
+### Added
+
+- **Automatic Research Saving**: PostToolUse hook now automatically saves every Perplexity API response to `.perplexity-research/`
+- New `save-perplexity-result.sh` script parses Bash command output and saves results as formatted markdown
+- Research is saved with timestamp, query, model, cost, answer, citations, and search results
+- No longer relies on Claude remembering to save - it's enforced by hook
+
+### Changed
+
+- Research persistence is now guaranteed, not optional
+- Hook receives tool response via stdin JSON and filters for Perplexity API calls only
+
+## [2.2.1] - 2025-01-14
+
+### Fixed
+
+- Research folder `.perplexity-research/` is now auto-created on session start via SessionStart hook
+- Previously required Claude to manually create the folder during searches
+
 ## [2.2.0] - 2025-01-14
 
 ### Added
