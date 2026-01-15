@@ -338,10 +338,20 @@ When the user asks to "turn auto-redirect back on" or similar:
 
 ## Uninstall Instructions
 
-When the user asks to "uninstall completely":
+When the user asks to "uninstall completely", run this bash script:
 
-1. Read `~/.claude/settings.json`
-2. Remove `PERPLEXITY_API_KEY` from environmentVariables (preserve everything else)
-3. Write the updated JSON back
-4. Run `/plugin uninstall lej-pp-search`
-5. Confirm: "LEJ PP Search fully removed."
+```bash
+# Full uninstall of lej-pp-search
+rm -rf ~/.claude/plugins/cache/lej-marketplace/lej-pp-search
+rm -rf ~/.claude/plugins/marketplaces/lej-marketplace
+jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/known_marketplaces.json && mv /tmp/known_marketplaces.json ~/.claude/plugins/known_marketplaces.json
+jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
+echo "LEJ PP Search fully removed."
+```
+
+Optionally also remove the API key from settings:
+```bash
+jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json
+```
+
+Confirm: "LEJ PP Search fully removed. Restart Claude Code to complete."

@@ -218,18 +218,29 @@ Run `/lej-pp-search:help` anytime for a quick reference of available commands an
 
 **Quick** (keeps API key for easy reinstall):
 ```
-/plugin uninstall lej-pp-search@lej-marketplace
+/plugins uninstall lej-pp-search@lej-marketplace
 ```
 
-**Full cleanup** (removes everything including the API key):
-Tell Claude "Uninstall lej-pp-search completely" and it handles removing the plugin, clearing the API key from settings, and cleaning up any cached data.
+**Full cleanup** (removes plugin, marketplace cache, and all cached data):
+```bash
+rm -rf ~/.claude/plugins/cache/lej-marketplace/lej-pp-search
+rm -rf ~/.claude/plugins/marketplaces/lej-marketplace
+jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/known_marketplaces.json && mv /tmp/known_marketplaces.json ~/.claude/plugins/known_marketplaces.json
+jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
+```
+
+To also remove API key: `jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json`
+
+Then restart Claude Code.
 
 ## Changelog
 
-- **v1.0.4** - Removed MCP server configuration that was causing 401 errors. Plugin now uses direct curl calls as originally designed.
-- **v1.0.3** - Added research persistence to `.perplexity-research/` directory
-- **v1.0.2** - Improved model selection guidance
-- **v1.0.1** - Initial release
+- **v2.3.0** - Automatic research saving via PostToolUse hook (enforced, not optional)
+- **v2.2.1** - Auto-create `.perplexity-research/` folder on session start
+- **v2.2.0** - Research persistence to `.perplexity-research/` directory
+- **v1.0.4** - Removed MCP server causing 401 errors
+
+See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## License
 
