@@ -9,7 +9,7 @@ Help the user configure their Perplexity API key.
 
 ## Step 1: Check Current Status
 
-First, read `~/.claude/settings.json` to check if `PERPLEXITY_API_KEY` is already set in `environmentVariables`.
+First, read `~/.claude/settings.json` to check if `PERPLEXITY_API_KEY` is already set in `env`.
 
 If already set, ask the user if they want to update it.
 
@@ -60,8 +60,8 @@ Only save after verification succeeds:
 
 1. Read `~/.claude/settings.json` (create if doesn't exist)
 2. Parse the JSON
-3. Ensure `environmentVariables` object exists
-4. Set `environmentVariables.PERPLEXITY_API_KEY` to the verified key
+3. Ensure `env` object exists
+4. Set `env.PERPLEXITY_API_KEY` to the verified key
 5. Write the updated JSON back (preserve all other keys)
 
 ## Step 5: Confirm

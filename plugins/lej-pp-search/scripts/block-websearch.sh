@@ -6,7 +6,11 @@
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 # Check if auto-redirect is disabled
-AUTO_REDIRECT=$(jq -r '.environmentVariables.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null)
+# Prefer env var (works in subagents), fall back to settings.json
+AUTO_REDIRECT="${LEJ_AUTO_REDIRECT:-}"
+if [[ -z "$AUTO_REDIRECT" ]]; then
+  AUTO_REDIRECT=$(jq -r '.env.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null || echo "true")
+fi
 
 if [[ "$AUTO_REDIRECT" == "false" ]]; then
   # Allow WebSearch to proceed normally
@@ -22,7 +26,11 @@ EOF
 fi
 
 # Check if Perplexity API key is configured
-API_KEY=$(jq -r '.environmentVariables.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
+# Prefer env var (works in subagents), fall back to settings.json
+API_KEY="${PERPLEXITY_API_KEY:-}"
+if [[ -z "$API_KEY" ]]; then
+  API_KEY=$(jq -r '.env.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
+fi
 
 if [[ -z "$API_KEY" ]]; then
   # No API key - block and ask user what they want to do
@@ -48,25 +56,25 @@ EOF
 fi
 
 # API key exists - block WebSearch and tell Claude to use curl
-cat << 'EOF' >&2
+cat << EOF >&2
 WebSearch is blocked. Use Perplexity via curl instead.
 
 **How to search:**
 
-```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
-  -H "Content-Type: application/json" \
+\`\`\`bash
+curl -s -X POST "https://api.perplexity.ai/chat/completions" \\
+  -H "Authorization: Bearer $API_KEY" \\
+  -H "Content-Type: application/json" \\
   -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY_HERE"}]}'
-```
+\`\`\`
 
 **Model selection:**
-- `sonar` — Fast, cheap (~$0.005)
-- `sonar-pro` — Better quality, default choice (~$0.008)
-- `sonar-reasoning-pro` — Complex analysis (~$0.01)
-- `sonar-deep-research` — Comprehensive reports (~$1+, slow)
+- \`sonar\` — Fast, cheap (~\$0.005)
+- \`sonar-pro\` — Better quality, default choice (~\$0.008)
+- \`sonar-reasoning-pro\` — Complex analysis (~\$0.01)
+- \`sonar-deep-research\` — Comprehensive reports (~\$1+, slow)
 
-**Response format:** Extract `choices[0].message.content` for the answer and `citations` array for sources.
+**Response format:** Extract \`choices[0].message.content\` for the answer and \`citations\` array for sources.
 
 Perplexity searches to DISCOVER new information, not confirm existing knowledge.
 EOF

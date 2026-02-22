@@ -15,13 +15,13 @@ Use Perplexity for web research instead of built-in WebSearch. Perplexity search
 
 ## How to Call Perplexity
 
-All Perplexity calls use the same API endpoint. The API key is stored in `~/.claude/settings.json` under `environmentVariables.PERPLEXITY_API_KEY`.
+All Perplexity calls use the same API endpoint. The API key is available as the `$PERPLEXITY_API_KEY` environment variable (set via `~/.claude/settings.json` under `env.PERPLEXITY_API_KEY`).
 
 ### Basic Call
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY"}]}'
 ```
@@ -30,7 +30,7 @@ curl -s -X POST "https://api.perplexity.ai/chat/completions" \
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "MODEL_NAME",
@@ -152,7 +152,7 @@ Controls reasoning depth. Only works with `sonar-reasoning-pro` model.
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest version of Node.js?"}], "web_search_options": {"search_context_size": "low"}}'
 ```
@@ -161,7 +161,7 @@ curl -s -X POST "https://api.perplexity.ai/chat/completions" \
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "Latest AI news"}], "search_recency_filter": "day"}'
 ```
@@ -170,7 +170,7 @@ curl -s -X POST "https://api.perplexity.ai/chat/completions" \
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "Compare PostgreSQL vs MySQL for a new project"}], "web_search_options": {"search_context_size": "high"}, "reasoning_effort": "high"}'
 ```
@@ -179,7 +179,7 @@ curl -s -X POST "https://api.perplexity.ai/chat/completions" \
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-deep-research", "messages": [{"role": "user", "content": "Comprehensive analysis of WebAssembly adoption"}]}' --max-time 300
 ```
@@ -255,7 +255,7 @@ After every Perplexity search, save the results to a markdown file for future re
 ```bash
 # 1. Run the search
 RESULT=$(curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest Node.js version?"}]}')
 
@@ -321,7 +321,7 @@ By default, WebSearch calls are automatically blocked and redirected to Perplexi
 When the user asks to "stop auto-redirecting", "let WebSearch through", "disable auto-redirect", or similar:
 
 1. Read `~/.claude/settings.json`
-2. Set `environmentVariables.LEJ_AUTO_REDIRECT` to `"false"`
+2. Set `env.LEJ_AUTO_REDIRECT` to `"false"`
 3. Write the updated JSON back
 4. Confirm: "Auto-redirect disabled. WebSearch works normally now."
 
@@ -351,7 +351,7 @@ echo "LEJ PP Search fully removed."
 
 Optionally also remove the API key from settings:
 ```bash
-jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json
+jq 'del(.env.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json
 ```
 
 Confirm: "LEJ PP Search fully removed. Restart Claude Code to complete."
