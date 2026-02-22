@@ -5,6 +5,15 @@ All notable changes to LEJ PP Search will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-02-22
+
+### Fixed
+
+- Use `env` instead of `environmentVariables` in settings.json (Anthropic renamed the key)
+- Scripts now check `$PERPLEXITY_API_KEY` env var first, fall back to settings.json (fixes subagent access)
+- Fixed heredoc quoting in `block-websearch.sh` so variables expand correctly
+- Updated README with correct `env` key name and uninstall command
+
 ## [2.3.0] - 2025-01-14
 
 ### Added
