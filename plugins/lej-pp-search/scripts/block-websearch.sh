@@ -6,7 +6,7 @@
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 # Check if auto-redirect is disabled
-AUTO_REDIRECT=$(jq -r '.environmentVariables.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null)
+AUTO_REDIRECT=$(jq -r '.env.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null)
 
 if [[ "$AUTO_REDIRECT" == "false" ]]; then
   # Allow WebSearch to proceed normally
@@ -22,7 +22,7 @@ EOF
 fi
 
 # Check if Perplexity API key is configured
-API_KEY=$(jq -r '.environmentVariables.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
+API_KEY=$(jq -r '.env.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
 
 if [[ -z "$API_KEY" ]]; then
   # No API key - block and ask user what they want to do
@@ -55,7 +55,7 @@ WebSearch is blocked. Use Perplexity via curl instead.
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer $(jq -r '.env.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY_HERE"}]}'
 ```

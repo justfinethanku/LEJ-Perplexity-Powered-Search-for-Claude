@@ -66,7 +66,7 @@ Walks you through adding your API key. Or just add it manually to `~/.claude/set
 
 ```json
 {
-  "environmentVariables": {
+  "env": {
     "PERPLEXITY_API_KEY": "your_key_here"
   }
 }
@@ -229,7 +229,7 @@ jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/kn
 jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
 ```
 
-To also remove API key: `jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json`
+To also remove API key: `jq 'del(.env.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json`
 
 Then restart Claude Code.
 
