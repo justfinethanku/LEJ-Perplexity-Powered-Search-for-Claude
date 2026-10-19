@@ -1,6 +1,6 @@
-# sonar-deep-research (Research)
+# high preset (Research)
 
-**Deep research with comprehensive analysis. Use only when explicitly asked for thorough/comprehensive research.**
+**Deep research with exhaustive source coverage. Use only when explicitly asked for thorough/comprehensive research.**
 
 ## When to Use
 
@@ -14,30 +14,32 @@
 
 | Attribute | Value |
 |-----------|-------|
-| Model | `sonar-deep-research` |
-| Speed | Slow (30 seconds to 5 minutes) |
-| Cost | ~$1+ per query |
-| Output | Deep analysis with extensive citations |
+| Preset | `high` (replaces `sonar-deep-research`) |
+| Speed | Slow (several minutes) |
+| Cost | Highest of the research presets |
+| Output | Deep analysis with extensive `[web:n]` citations |
+
+For open-ended agentic work (running code in a sandbox, long tool-use loops), use `xhigh` instead. It is the most capable and most expensive preset.
 
 ## How to Call
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+curl -s "https://api.perplexity.ai/v1/agent" \
+  -H "Authorization: Bearer $(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-deep-research", "messages": [{"role": "user", "content": "YOUR_RESEARCH_TOPIC_HERE"}]}' \
-  --max-time 300
+  -d '{"preset": "high", "input": "YOUR_RESEARCH_TOPIC_HERE"}' \
+  --max-time 600
 ```
 
-**Important:** Use `--max-time 300` to allow for the longer response time.
+**Important:** Use `--max-time 600` to allow for the longer response time.
 
 ## Response
 
-Returns JSON with:
-- `choices[0].message.content` — Comprehensive analysis with extensive citations
-- `citations` — Large array of source URLs (2× more than other models)
-- `search_results` — Detailed search results
-- `usage.reasoning_tokens` — Shows depth of analysis performed
+Returns JSON with an `output` array:
+- `message` item — `content[].text` is the comprehensive analysis with `[web:n]` citation markers
+- `search_results` items — large set of sources; `[web:n]` matches the result whose `id` is `n`
+- `usage.output_tokens_details.reasoning_tokens` — shows depth of analysis performed
+- `usage.cost.total_cost` — what the run cost
 
 ## Best For
 
@@ -49,10 +51,10 @@ Returns JSON with:
 
 ## Important Notes
 
-- **Be patient**: Can take 30 seconds to 5 minutes
-- **Use sparingly**: High cost (~$1+ per query)
+- **Be patient**: Can take several minutes
+- **Use sparingly**: Highest cost of the research presets
 - **Worth the wait**: When you need thorough, well-cited analysis
-- **Not for quick lookups**: Use `sonar-pro` instead
+- **Not for quick lookups**: Use `fast` instead
 
 ## Prompting Tips
 

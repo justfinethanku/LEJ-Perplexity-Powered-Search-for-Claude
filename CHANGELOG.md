@@ -5,6 +5,21 @@ All notable changes to LEJ PP Search will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-10-18
+
+### Changed
+
+- **Migrated to Perplexity's Agent API**: All calls now go to `/v1/agent` with presets (`fast`, `low`, `medium`, `high`, `xhigh`). Sonar Chat Completions (`/chat/completions`) was retired on September 27, 2026 and returns `403 agent_api_migration_required`
+- Default is now the `fast` preset (replaces `sonar-pro`). Mapping: `sonar`/`sonar-pro` → `fast`, `sonar-reasoning-pro` → `low`, `sonar-deep-research` → `high`
+- Search options moved onto the `web_search` tool: recency and domain filters go in `filters`, `search_context_size` is replaced by `max_results` and token budgets, `return_images` by the `image_search` tool
+- API key and `LEJ_AUTO_REDIRECT` are now stored under `env` in settings.json, which Claude Code actually loads. Scripts still read the legacy `environmentVariables` location
+- Help command describes presets instead of the old `perplexity_*` MCP tools
+
+### Fixed
+
+- Auto-save hook never saved anything: it read `tool_response` as a string, but Bash tool responses are objects with a `stdout` field
+- Auto-save hook parses the Agent API response shape (`output[]` message and `search_results` items) and records the preset used
+
 ## [2.3.0] - 2025-01-14
 
 ### Added
