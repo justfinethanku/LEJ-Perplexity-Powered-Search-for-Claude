@@ -9,7 +9,7 @@ Help the user configure their Perplexity API key.
 
 ## Step 1: Check Current Status
 
-First, read `~/.claude/settings.json` to check if `PERPLEXITY_API_KEY` is already set in `environmentVariables`.
+First, read `~/.claude/settings.json` to check if `PERPLEXITY_API_KEY` is already set in `env` (or the legacy `environmentVariables`).
 
 If already set, ask the user if they want to update it.
 
@@ -36,14 +36,14 @@ If they select "I have my key ready" or provide a custom response with their key
 Before saving, verify the key works by making a test API call:
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer THE_API_KEY_HERE" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar", "messages": [{"role": "user", "content": "Say hi"}], "max_tokens": 5}'
+  -d '{"preset": "fast", "input": "Say hi", "max_output_tokens": 16}'
 ```
 
 **Check the response:**
-- If response contains `"choices"` and `"id"` → Key is valid, proceed to Step 4
+- If response contains `"output"` and `"id"` → Key is valid, proceed to Step 4
 - If response contains `401` or `Unauthorized` → Key is invalid, inform user and ask if they want to try again
 - If response contains other errors → Show error to user and ask if they want to try again
 
@@ -60,9 +60,10 @@ Only save after verification succeeds:
 
 1. Read `~/.claude/settings.json` (create if doesn't exist)
 2. Parse the JSON
-3. Ensure `environmentVariables` object exists
-4. Set `environmentVariables.PERPLEXITY_API_KEY` to the verified key
-5. Write the updated JSON back (preserve all other keys)
+3. Ensure `env` object exists (Claude Code loads `env`, not `environmentVariables`)
+4. Set `env.PERPLEXITY_API_KEY` to the verified key
+5. If a legacy `environmentVariables.PERPLEXITY_API_KEY` exists, remove it so there is one source of truth
+6. Write the updated JSON back (preserve all other keys)
 
 ## Step 5: Confirm
 
@@ -72,7 +73,7 @@ Tell the user:
 
 The plugin will automatically redirect WebSearch to Perplexity. Just search normally and you'll get Perplexity-powered results.
 
-**Note:** You may need to start a new session for the MCP server to pick up the new key.
+**Note:** Start a new session so the hooks pick up the new key.
 
 Run `/lej-pp-search:help` for more info on available tools and commands."
 
@@ -81,4 +82,4 @@ Run `/lej-pp-search:help` for more info on available tools and commands."
 - Never log or display the API key after receiving it
 - Preserve all other keys in settings.json
 - If settings.json doesn't exist, create it with proper structure
-- The verification call uses minimal tokens (max_tokens: 5) to minimize cost
+- The verification call uses the cheap `fast` preset with `max_output_tokens: 16` to minimize cost

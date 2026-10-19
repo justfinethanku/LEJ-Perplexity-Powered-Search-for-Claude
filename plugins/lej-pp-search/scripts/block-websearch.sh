@@ -2,11 +2,12 @@
 # block-websearch.sh
 # Intercepts WebSearch calls and redirects Claude to use Perplexity via curl
 # Can be disabled by setting LEJ_AUTO_REDIRECT=false in ~/.claude/settings.json
+# Settings are read from "env" (what Claude Code loads) or the legacy "environmentVariables"
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 # Check if auto-redirect is disabled
-AUTO_REDIRECT=$(jq -r '.environmentVariables.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null)
+AUTO_REDIRECT=$(jq -r '.env.LEJ_AUTO_REDIRECT // .environmentVariables.LEJ_AUTO_REDIRECT // "true"' "$SETTINGS_FILE" 2>/dev/null)
 
 if [[ "$AUTO_REDIRECT" == "false" ]]; then
   # Allow WebSearch to proceed normally
@@ -22,7 +23,7 @@ EOF
 fi
 
 # Check if Perplexity API key is configured
-API_KEY=$(jq -r '.environmentVariables.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
+API_KEY=$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' "$SETTINGS_FILE" 2>/dev/null)
 
 if [[ -z "$API_KEY" ]]; then
   # No API key - block and ask user what they want to do
@@ -54,19 +55,19 @@ WebSearch is blocked. Use Perplexity via curl instead.
 **How to search:**
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+curl -s "https://api.perplexity.ai/v1/agent" \
+  -H "Authorization: Bearer $(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY_HERE"}]}'
+  -d '{"preset": "fast", "input": "YOUR_QUERY_HERE"}'
 ```
 
-**Model selection:**
-- `sonar` — Fast, cheap (~$0.005)
-- `sonar-pro` — Better quality, default choice (~$0.008)
-- `sonar-reasoning-pro` — Complex analysis (~$0.01)
-- `sonar-deep-research` — Comprehensive reports (~$1+, slow)
+**Preset selection:**
+- `fast` — Quick lookups and everyday questions, default choice (~$0.002)
+- `low` — Light multi-step research
+- `medium` — Multi-hop research across many sources, comparisons
+- `high` — Exhaustive deep research (slow, use `--max-time 600`)
 
-**Response format:** Extract `choices[0].message.content` for the answer and `citations` array for sources.
+**Response format:** The `output` array holds a `message` item (answer text in `content[].text`, with `[n]` citation markers) and a `search_results` item (sources in `results[]`; each `id` matches a marker).
 
 Perplexity searches to DISCOVER new information, not confirm existing knowledge.
 EOF

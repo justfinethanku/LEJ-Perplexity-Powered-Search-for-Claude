@@ -10,7 +10,7 @@ The difference matters more than you'd think. When Claude searches for "React 19
 
 - [How It Works](#how-it-works) - Auto-redirects WebSearch to Perplexity
 - [Setup](#setup) - Get running in 2 minutes
-- [The Four Models](#the-four-models) - From quick lookups to deep research
+- [The Presets](#the-presets) - From quick lookups to deep research
 - [Toggling Auto-Redirect](#toggling-auto-redirect) - Turn it on/off with plain English
 - [Why This Matters](#why-this-matters) - The confirmation bias thing explained
 - [Benchmark](#benchmark-perplexity-vs-websearch) - Actual speed and quality numbers
@@ -66,7 +66,7 @@ Walks you through adding your API key. Or just add it manually to `~/.claude/set
 
 ```json
 {
-  "environmentVariables": {
+  "env": {
     "PERPLEXITY_API_KEY": "your_key_here"
   }
 }
@@ -80,24 +80,26 @@ After setup, restart Claude Code to ensure the plugin loads correctly. The hook 
 
 ---
 
-## The Four Models
+## The Presets
 
-Perplexity offers different models optimized for different use cases. The plugin guides Claude to pick the right one based on your query, but here's what each does:
+Perplexity's Agent API (`/v1/agent`) replaced the Sonar models on September 27, 2026. Instead of picking a model, you pick a preset that sets how hard Perplexity researches. The plugin guides Claude to pick the right one based on your query:
 
-| Model | What It's For | Cost | Speed |
-|-------|---------------|------|-------|
-| `sonar` | Quick lookups, basic facts, simple questions | ~$0.005 | Fastest |
-| `sonar-pro` | Quality Q&A with citations (default) | ~$0.008 | Fast |
-| `sonar-reasoning-pro` | Step-by-step logical analysis, complex comparisons | ~$0.01 | Medium |
-| `sonar-deep-research` | Comprehensive reports, multi-source synthesis | ~$1+ | Slow (30s-2min) |
+| Preset | What It's For | Cost | Speed |
+|--------|---------------|------|-------|
+| `fast` | Quick lookups and everyday questions (default) | ~$0.002 | ~5s |
+| `low` | Light multi-step research | ~$0.01 | ~1 min |
+| `medium` | Multi-hop research, comparisons, tradeoffs | ~$0.02 | ~1 min |
+| `high` | Comprehensive reports, exhaustive coverage | Highest | Several minutes |
+
+Costs and times were measured on real queries in October 2026.
 
 **When to use what:**
-- "What's the current version of Node.js?" → `sonar` (simple fact)
-- "How do I set up authentication in Next.js 15?" → `sonar-pro` (needs good citations)
-- "Compare Prisma vs Drizzle for a high-traffic app" → `sonar-reasoning-pro` (needs analysis)
-- "Give me a complete market analysis of AI video tools" → `sonar-deep-research` (needs depth)
+- "What's the current version of Node.js?" → `fast` (simple fact)
+- "How do I set up authentication in Next.js 15?" → `fast`, or `low` if it needs more digging
+- "Compare Prisma vs Drizzle for a high-traffic app" → `medium` (needs analysis)
+- "Give me a complete market analysis of AI video tools" → `high` (needs depth)
 
-Claude uses `sonar-pro` by default because it balances speed, quality, and cost well. The skill prompts guide Claude to upgrade to reasoning or deep-research when your query needs it.
+Claude uses `fast` by default because it's quick and cheap. The skill prompts guide Claude to step up to `low`, `medium` or `high` when your query needs it.
 
 ## Toggling Auto-Redirect
 
@@ -161,7 +163,7 @@ Both are accurate. The main difference is format: Perplexity returns faster with
 | Service | Per Query | Notes |
 |---------|-----------|-------|
 | Anthropic WebSearch | $0.01 | Plus token costs for processing |
-| Perplexity sonar-pro | ~$0.014 | All-inclusive |
+| Perplexity `fast` preset | ~$0.002 | All-inclusive |
 
 Roughly equivalent cost per query. The real win is speed and the pre-synthesized format that reduces Claude's processing time.
 
@@ -229,7 +231,7 @@ jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/kn
 jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
 ```
 
-To also remove API key: `jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json`
+To also remove API key: `jq 'del(.env.PERPLEXITY_API_KEY, .environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json`
 
 Then restart Claude Code.
 

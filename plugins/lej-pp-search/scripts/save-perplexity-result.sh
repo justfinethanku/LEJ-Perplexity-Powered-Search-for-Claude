@@ -16,22 +16,22 @@ if [[ "$COMMAND" != *"api.perplexity.ai"* ]]; then
   exit 0
 fi
 
-# Extract the tool response (curl output)
-TOOL_RESPONSE=$(echo "$INPUT" | jq -r '.tool_response // empty' 2>/dev/null)
+# Extract the tool response (curl output). Bash tool responses are objects with stdout.
+TOOL_RESPONSE=$(echo "$INPUT" | jq -r '.tool_response | if type == "object" then .stdout else . end // empty' 2>/dev/null)
 
 # Validate we got a response
 if [[ -z "$TOOL_RESPONSE" ]] || [[ "$TOOL_RESPONSE" == "null" ]]; then
   exit 0
 fi
 
-# Try to parse as JSON to validate it's a Perplexity response
-if ! echo "$TOOL_RESPONSE" | jq -e '.choices[0].message.content' >/dev/null 2>&1; then
+# Try to parse as JSON to validate it's a Perplexity Agent API response
+if ! echo "$TOOL_RESPONSE" | jq -e '.output[] | select(.type == "message")' >/dev/null 2>&1; then
   exit 0
 fi
 
 # Extract query from the curl command's -d parameter
 # Use sed for macOS compatibility (no grep -P)
-QUERY=$(echo "$COMMAND" | sed -n 's/.*"content"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tail -1 2>/dev/null || echo "")
+QUERY=$(echo "$COMMAND" | sed -n 's/.*"input"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tail -1 2>/dev/null || echo "")
 
 # If we couldn't extract from command, try from response
 if [[ -z "$QUERY" ]]; then
@@ -39,8 +39,12 @@ if [[ -z "$QUERY" ]]; then
 fi
 
 # Extract response fields
-ANSWER=$(echo "$TOOL_RESPONSE" | jq -r '.choices[0].message.content // "No content"')
+ANSWER=$(echo "$TOOL_RESPONSE" | jq -r '[.output[] | select(.type == "message") | .content[] | select(.type == "output_text") | .text] | join("\n\n") | if . == "" then "No content" else . end')
+PRESET=$(echo "$COMMAND" | sed -n 's/.*"preset"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tail -1 2>/dev/null || echo "")
 MODEL=$(echo "$TOOL_RESPONSE" | jq -r '.model // "unknown"')
+if [[ -n "$PRESET" ]]; then
+  MODEL="${PRESET} preset (${MODEL})"
+fi
 COST=$(echo "$TOOL_RESPONSE" | jq -r '.usage.cost.total_cost // "unknown"' 2>/dev/null)
 
 # Generate filename
@@ -52,29 +56,29 @@ FILENAME=".perplexity-research/${TIMESTAMP}-${SLUG}.md"
 # Ensure directory exists
 mkdir -p .perplexity-research
 
+# Collect sources from every search_results item; each id matches an [n] marker in the answer
+RESULTS=$(echo "$TOOL_RESPONSE" | jq -c '[.output[] | select(.type == "search_results") | .results[]]' 2>/dev/null || echo "[]")
+
 # Build citations section using printf for proper newlines
 CITATIONS_MD=""
-CITATIONS=$(echo "$TOOL_RESPONSE" | jq -r '.citations // [] | .[]' 2>/dev/null || echo "")
+CITATIONS=$(echo "$RESULTS" | jq -r '.[] | "\(.id // "-")\t\(.url // empty)"' 2>/dev/null || echo "")
 if [[ -n "$CITATIONS" ]]; then
-  COUNTER=1
-  while IFS= read -r url; do
+  while IFS=$'\t' read -r id url; do
     if [[ -n "$url" ]]; then
-      CITATIONS_MD="${CITATIONS_MD}${COUNTER}. <${url}>"$'\n'
-      ((COUNTER++))
+      CITATIONS_MD="${CITATIONS_MD}${id}. <${url}>"$'\n'
     fi
   done <<< "$CITATIONS"
 fi
 
 # Build search results section
 SEARCH_RESULTS_MD=""
-SEARCH_RESULTS=$(echo "$TOOL_RESPONSE" | jq -r '.search_results // []' 2>/dev/null)
-if [[ "$SEARCH_RESULTS" != "[]" ]] && [[ "$SEARCH_RESULTS" != "null" ]] && [[ -n "$SEARCH_RESULTS" ]]; then
+if [[ "$RESULTS" != "[]" ]] && [[ -n "$RESULTS" ]]; then
   while IFS= read -r result; do
     TITLE=$(echo "$result" | jq -r '.title // "Untitled"')
     URL=$(echo "$result" | jq -r '.url // "N/A"')
     SNIPPET=$(echo "$result" | jq -r '.snippet // "N/A"')
     SEARCH_RESULTS_MD="${SEARCH_RESULTS_MD}### ${TITLE}"$'\n'"**URL:** ${URL}"$'\n'"**Snippet:** ${SNIPPET}"$'\n\n'
-  done <<< "$(echo "$SEARCH_RESULTS" | jq -c '.[]' 2>/dev/null)"
+  done <<< "$(echo "$RESULTS" | jq -c '.[]' 2>/dev/null)"
 fi
 
 # Write markdown file
