@@ -141,6 +141,29 @@ class ResearchReceiptTests(unittest.TestCase):
                       '### Second source\n**URL:** https://example.com/two\n**Snippet:** Evidence two'):
             self.assertIn(value, markdown)
 
+    def test_large_receipt_keeps_every_source_in_order_and_literal(self):
+        sources = [
+            {'title': f'Source {i}', 'url': f'https://example.com/{i}',
+             'snippet': f'Evidence {i}: café "quoted"\nnext line $(touch injected)'}
+            for i in range(100)
+        ]
+        markdown = self.save(self.curl('Many sources'), response={
+            'choices': [{'message': {'content': 'Large answer ' * 1000}}],
+            'citations': [source['url'] for source in sources],
+            'search_results': sources,
+        })
+        previous = -1
+        for i, source in enumerate(sources):
+            self.assertIn(f"{i + 1}. <{source['url']}>", markdown)
+            expected = (f"### {source['title']}\n**URL:** {source['url']}\n"
+                        f"**Snippet:** {source['snippet']}")
+            position = markdown.index(expected)
+            self.assertGreater(position, previous)
+            previous = position
+        self.assertEqual(markdown.count('### Source '), 100)
+        self.assertIn('Large answer ' * 1000, markdown)
+        self.assertFalse((self.project / 'injected').exists())
+
     def test_missing_optional_metadata_still_saves_answer(self):
         markdown = self.save(self.curl('Minimal question'), response={
             'choices': [{'message': {'content': 'Minimal answer'}}],
