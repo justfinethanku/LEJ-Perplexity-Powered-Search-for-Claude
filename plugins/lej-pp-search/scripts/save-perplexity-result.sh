@@ -30,14 +30,9 @@ if ! echo "$TOOL_RESPONSE" | jq -e '.choices[0].message.content' >/dev/null 2>&1
   exit 0
 fi
 
-# Extract query from the curl command's -d parameter
-# Use sed for macOS compatibility (no grep -P)
-QUERY=$(echo "$COMMAND" | sed -n 's/.*"content"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tail -1 2>/dev/null || echo "")
-
-# If we couldn't extract from command, try from response
-if [[ -z "$QUERY" ]]; then
-  QUERY="perplexity-search"
-fi
+# Decode the literal request JSON, including shell quoting and JSON escapes.
+# Never execute command text or read an @file to infer receipt metadata.
+QUERY=$(printf '%s' "$COMMAND" | python3 "$SCRIPT_DIR/research-query.py")
 
 # Extract response fields
 ANSWER=$(echo "$TOOL_RESPONSE" | jq -r '.choices[0].message.content // "No content"')
