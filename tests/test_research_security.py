@@ -145,6 +145,12 @@ class ResearchSecurityTests(unittest.TestCase):
         for document in (root / 'README.md', SCRIPTS.parent / 'skills/lej-pp-search/SKILL.md'):
             with self.subTest(document=document.name):
                 text = document.read_text()
+                if document.name == 'SKILL.md':
+                    link = re.search(r'\[README uninstall procedure\]\(([^#)]+)#uninstall\)', text)
+                    self.assertIsNotNone(link, 'Skill must link to the maintained uninstall procedure')
+                    target = (document.parent / link[1]).resolve()
+                    self.assertEqual(target, (root / 'README.md').resolve())
+                    text = target.read_text()
                 command = re.search(r'```bash\n(\(\n  set -e\n  settings_tmp=.*?)```', text, re.S)[1]
                 settings_dir = self.root / 'home' / '.claude'
                 settings_dir.mkdir(parents=True, exist_ok=True)
