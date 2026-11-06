@@ -11,7 +11,7 @@ Re-enable the automatic interception of WebSearch calls. After this, WebSearch c
 
 1. Read the file `~/.claude/settings.json`
 2. Parse the JSON content
-3. If `environmentVariables.LEJ_AUTO_REDIRECT` exists, remove it (or set to `"true"`)
+3. If `env.LEJ_AUTO_REDIRECT` or `environmentVariables.LEJ_AUTO_REDIRECT` exists, remove it (or set to `"true"`)
 4. Write the updated JSON back to the file (preserve all other keys)
 5. Confirm to the user: "Auto-redirect enabled. WebSearch calls will now be redirected to Perplexity. Run `/lej-pp-search:disable-redirect` to turn it off."
 

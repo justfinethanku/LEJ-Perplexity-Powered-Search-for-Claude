@@ -23,7 +23,7 @@
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
-  -H "Authorization: Bearer $(jq -r '.environmentVariables.PERPLEXITY_API_KEY' ~/.claude/settings.json)" \
+  -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
   -d '{"model": "sonar", "messages": [{"role": "user", "content": "YOUR_QUERY_HERE"}]}'
 ```

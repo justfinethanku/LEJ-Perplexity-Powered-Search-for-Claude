@@ -11,6 +11,7 @@ import unittest
 
 
 PLUGIN = Path(__file__).resolve().parents[1] / 'plugins/lej-pp-search'
+SYNTHETIC_KEY = 'synthetic-fleet-641-DoNotPrint-9f3c2a7b'
 
 
 class HookLifecycleTests(unittest.TestCase):
@@ -31,21 +32,45 @@ class HookLifecycleTests(unittest.TestCase):
         self.configure(redirect='true')
 
     def configure(self, redirect):
-        (self.home / '.claude/settings.json').write_text(json.dumps({
+        self.write_settings({
             'environmentVariables': {
                 'LEJ_AUTO_REDIRECT': redirect,
                 'PERPLEXITY_API_KEY': 'synthetic-lifecycle-key',
             },
-        }))
+        })
 
-    def run_hook(self, event, payload=None):
+    def write_settings(self, payload):
+        (self.home / '.claude/settings.json').write_text(json.dumps(payload))
+
+    def run_hook(self, event, payload=None, extra_env=None):
         command = self.hooks[event][0]['hooks'][0]['command']
+        env = os.environ.copy()
+        env['HOME'] = str(self.home)
+        env['CLAUDE_PLUGIN_ROOT'] = str(self.plugin)
+        # Never inherit a real credential into the hook under test.
+        env.pop('PERPLEXITY_API_KEY', None)
+        env.pop('LEJ_AUTO_REDIRECT', None)
+        if extra_env:
+            env.update(extra_env)
         return subprocess.run(
             ['bash', '-c', command], input=json.dumps(payload or {}),
             text=True, capture_output=True, cwd=self.project, timeout=10,
-            env={**os.environ, 'HOME': str(self.home),
-                 'CLAUDE_PLUGIN_ROOT': str(self.plugin)}, umask=0o022,
+            env=env, umask=0o022,
         )
+
+    def assert_secret_absent(self, result, secret):
+        self.assertNotIn(secret, result.stdout)
+        self.assertNotIn(secret, result.stderr)
+
+    def assert_redirect_instructions(self, result, secret):
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('WebSearch is blocked', result.stderr)
+        self.assertIn('https://api.perplexity.ai/chat/completions', result.stderr)
+        self.assertIn('YOUR_QUERY_HERE', result.stderr)
+        self.assertIn('${PERPLEXITY_API_KEY:-', result.stderr)
+        self.assertIn('Do not print the API key', result.stderr)
+        self.assertEqual(result.stdout, '')
+        self.assert_secret_absent(result, secret)
 
     def response(self, answer='Lifecycle answer [1]'):
         return {
@@ -80,9 +105,42 @@ class HookLifecycleTests(unittest.TestCase):
 
     def test_registered_redirect_blocks_in_spaced_install(self):
         result = self.run_hook('PreToolUse')
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertIn('WebSearch is blocked', result.stderr)
-        self.assertNotIn('synthetic-lifecycle-key', result.stderr + result.stdout)
+        self.assert_redirect_instructions(result, 'synthetic-lifecycle-key')
+
+    def test_synthetic_key_stays_out_of_hook_output(self):
+        """FLEET-641: an expanding heredoc must not echo a configured key."""
+        cases = (
+            ('settings env', {'env': {'PERPLEXITY_API_KEY': SYNTHETIC_KEY}}, {}),
+            ('legacy settings', {'environmentVariables': {'PERPLEXITY_API_KEY': SYNTHETIC_KEY}}, {}),
+            ('process environment', {}, {'PERPLEXITY_API_KEY': SYNTHETIC_KEY}),
+            ('all sources', {
+                'env': {'PERPLEXITY_API_KEY': SYNTHETIC_KEY},
+                'environmentVariables': {'PERPLEXITY_API_KEY': SYNTHETIC_KEY},
+            }, {'PERPLEXITY_API_KEY': SYNTHETIC_KEY}),
+        )
+        for name, settings, extra in cases:
+            with self.subTest(name=name):
+                self.write_settings(settings)
+                result = self.run_hook('PreToolUse', extra_env=extra)
+                self.assert_redirect_instructions(result, SYNTHETIC_KEY)
+
+    def test_redirect_disable_does_not_print_synthetic_key(self):
+        self.write_settings({
+            'env': {
+                'LEJ_AUTO_REDIRECT': 'false',
+                'PERPLEXITY_API_KEY': SYNTHETIC_KEY,
+            },
+        })
+        result = self.run_hook('PreToolUse', extra_env={'PERPLEXITY_API_KEY': SYNTHETIC_KEY})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'allow')
+        self.assert_secret_absent(result, SYNTHETIC_KEY)
+
+        self.write_settings({'environmentVariables': {'PERPLEXITY_API_KEY': SYNTHETIC_KEY}})
+        result = self.run_hook('PreToolUse', extra_env={'LEJ_AUTO_REDIRECT': 'false'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'allow')
+        self.assert_secret_absent(result, SYNTHETIC_KEY)
 
     def test_full_lifecycle_saves_once_with_private_directory(self):
         self.assert_private_lifecycle()

@@ -5,6 +5,13 @@ All notable changes to LEJ PP Search will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-11-06
+
+### Fixed
+
+- The WebSearch redirect hook treats a key as configured when `PERPLEXITY_API_KEY` is set in the environment, under `env` in `~/.claude/settings.json`, or under legacy `environmentVariables`.
+- Redirect instructions stay in a quoted heredoc. A configured key is not written to stdout or stderr (PreToolUse exit 2 feeds stderr back to Claude).
+
 ## [2.3.0] - 2025-01-14
 
 ### Added

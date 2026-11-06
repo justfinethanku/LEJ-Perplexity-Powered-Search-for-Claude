@@ -9,7 +9,7 @@ Help the user configure their Perplexity API key.
 
 ## Step 1: Check Current Status
 
-First, read `~/.claude/settings.json` to check if `PERPLEXITY_API_KEY` is already set in `environmentVariables`.
+First, read `~/.claude/settings.json` to check if `PERPLEXITY_API_KEY` is already set in `env` or legacy `environmentVariables`. Do not print the key.
 
 If already set, ask the user if they want to update it.
 
@@ -33,7 +33,7 @@ If they select "I have my key ready" or provide a custom response with their key
 
 ## Step 3: Verify API Key
 
-Before saving, verify the key works by making a test API call:
+Before saving, verify the key works by making a test API call. Substitute the key the user just provided for `THE_API_KEY_HERE`. Do not echo the command or the key:
 
 ```bash
 curl -s -X POST "https://api.perplexity.ai/chat/completions" \
@@ -60,9 +60,10 @@ Only save after verification succeeds:
 
 1. Read `~/.claude/settings.json` (create if doesn't exist)
 2. Parse the JSON
-3. Ensure `environmentVariables` object exists
-4. Set `environmentVariables.PERPLEXITY_API_KEY` to the verified key
+3. Ensure both `env` and `environmentVariables` objects exist
+4. Set `env.PERPLEXITY_API_KEY` and `environmentVariables.PERPLEXITY_API_KEY` to the verified key
 5. Write the updated JSON back (preserve all other keys)
+6. Do not print, log, or echo the key
 
 ## Step 5: Confirm
 
