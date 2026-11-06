@@ -4,7 +4,7 @@
 
 This plugin intercepts Claude Code's built-in WebSearch and prompts Claude to call Perplexity with `curl`. A separate hook saves recognized responses as Markdown in your project.
 
-**Current compatibility (verified November 6, 2026):** `main` still uses the legacy Sonar `/chat/completions` API and `environmentVariables` settings. Its save hook accepts a JSON **string** in `tool_response`; current Claude Code Bash events use an object with `stdout`, which this version silently skips. [PR #3](https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude/pull/3) tracks the API, settings, and response migration and is not yet merged. Installation succeeds on Claude Code 2.1.318, but that does not establish working live searches or automatic saving. See [Troubleshooting](#troubleshooting) before configuring a key.
+**Current compatibility (verified November 6, 2026):** This version still calls the legacy Sonar `/chat/completions` API. The redirect hook treats a key as configured when `PERPLEXITY_API_KEY` is set in the environment, or in `~/.claude/settings.json` under `env` or legacy `environmentVariables`. It does not print that key. The save hook still accepts a JSON **string** in `tool_response`; current Claude Code Bash events use an object with `stdout`, which this version silently skips. [PR #3](https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude/pull/3) tracks the Agent API and response migration and is not yet merged. Installation succeeds on Claude Code 2.1.318, but that does not establish working live searches or automatic saving. See [Troubleshooting](#troubleshooting) before configuring a key.
 
 The difference matters more than you'd think. When Claude searches for "React 19 new features," it's looking to validate what it learned during training. But if React 19 changed something since then? Claude's search might miss it entirely because it wasn't looking for contradictions. Perplexity has no preconceptions - it just finds what's actually out there right now.
 
@@ -83,17 +83,17 @@ The current setup command attempts a legacy Sonar request to verify a key:
 /lej-pp-search:setup
 ```
 
-It can fail at that request even with a valid key. The current hook reads this **legacy** structure in `~/.claude/settings.json`:
+It can fail at that request even with a valid key. Claude Code loads this structure in `~/.claude/settings.json`:
 
 ```json
 {
-  "environmentVariables": {
+  "env": {
     "PERPLEXITY_API_KEY": "your_key_here"
   }
 }
 ```
 
-Merge fields into existing settings rather than replacing the file. This is the legacy hook's input, not Claude Code's supported environment setting: Claude Code uses `env`. Setting only `env.PERPLEXITY_API_KEY` does not satisfy the current hook, and exporting the variable alone does not satisfy it either. PR #3 owns that compatibility fix. The scripts also hard-code `$HOME/.claude/settings.json`; changing only `CLAUDE_CONFIG_DIR` does not relocate their key lookup.
+Merge fields into existing settings rather than replacing the file. The redirect hook also accepts legacy `environmentVariables.PERPLEXITY_API_KEY` and a `PERPLEXITY_API_KEY` value already in the environment. It checks presence only and does not print the key. The scripts hard-code `$HOME/.claude/settings.json`; changing only `CLAUDE_CONFIG_DIR` does not relocate their key lookup.
 
 After any settings change, start a new session. A redirect message proves only that the hook found a key; check the API response and the saved file separately. Never print or share your key while diagnosing a failure.
 
@@ -239,7 +239,7 @@ Run the prerequisite checks in the same environment that launches Claude Code. I
 **"401 Unauthorized" errors:**
 Your API key is missing or invalid. Run `/lej-pp-search:setup` to reconfigure, or check that `PERPLEXITY_API_KEY` is set correctly in `~/.claude/settings.json`.
 
-The legacy hook reads `environmentVariables.PERPLEXITY_API_KEY`, not `env` or the shell environment. It checks presence only. An authentication failure from the remote API requires a separate key/billing check in your API console.
+The redirect hook checks the `PERPLEXITY_API_KEY` environment variable, then `env.PERPLEXITY_API_KEY`, then legacy `environmentVariables.PERPLEXITY_API_KEY`. It checks presence only and does not print the key. An authentication failure from the remote API requires a separate key/billing check in your API console.
 
 **WebSearch still works (not being redirected):**
 The plugin might not be loaded. Check `~/.claude/settings.json` has `"lej-pp-search@lej-marketplace": true` in `enabledPlugins`. Restart Claude Code after enabling.
@@ -261,7 +261,7 @@ claude plugin update lej-pp-search@lej-marketplace --scope user
 claude plugin list --json
 ```
 
-The manifest still declares version `2.3.0`. If Claude reports it is already current but the cached files are stale, uninstall and reinstall the plugin using the commands below; do not edit cached source or the plugin registry JSON by hand.
+The manifest declares version `2.3.1`. If Claude reports it is already current but the cached files are stale, uninstall and reinstall the plugin using the commands below; do not edit cached source or the plugin registry JSON by hand.
 
 ## Local validation
 
@@ -319,6 +319,7 @@ Then restart Claude Code.
 
 ## Changelog
 
+- **v2.3.1** - Recognize `env` and `PERPLEXITY_API_KEY` without printing the key
 - **v2.3.0** - Automatic research saving via PostToolUse hook (enforced, not optional)
 - **v2.2.1** - Auto-create `.perplexity-research/` folder on session start
 - **v2.2.0** - Research persistence to `.perplexity-research/` directory
