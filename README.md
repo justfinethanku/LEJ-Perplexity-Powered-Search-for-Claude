@@ -2,20 +2,23 @@
 
 **Perplexity-Powered Search for Claude Code**
 
-Here's the deal: Claude's built-in web search has a confirmation bias problem. It searches to *confirm* what it already thinks it knows from training data. Perplexity does the opposite - it searches to *discover* what it doesn't know. This plugin swaps one for the other automatically. 5x faster, better citations, and your research actually gets saved.
+This plugin intercepts Claude Code's built-in WebSearch and prompts Claude to call Perplexity with `curl`. A separate hook saves recognized responses as Markdown in your project.
+
+**Current compatibility (verified November 6, 2026):** `main` still uses the legacy Sonar `/chat/completions` API and `environmentVariables` settings. Its save hook accepts a JSON **string** in `tool_response`; current Claude Code Bash events use an object with `stdout`, which this version silently skips. [PR #3](https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude/pull/3) tracks the API, settings, and response migration and is not yet merged. Installation succeeds on Claude Code 2.1.318, but that does not establish working live searches or automatic saving. See [Troubleshooting](#troubleshooting) before configuring a key.
 
 The difference matters more than you'd think. When Claude searches for "React 19 new features," it's looking to validate what it learned during training. But if React 19 changed something since then? Claude's search might miss it entirely because it wasn't looking for contradictions. Perplexity has no preconceptions - it just finds what's actually out there right now.
 
 ## What's Inside
 
 - [How It Works](#how-it-works) - Auto-redirects WebSearch to Perplexity
-- [Setup](#setup) - Get running in 2 minutes
+- [Setup](#setup) - Prerequisites, installation, and verification
 - [The Four Models](#the-four-models) - From quick lookups to deep research
 - [Toggling Auto-Redirect](#toggling-auto-redirect) - Turn it on/off with plain English
 - [Why This Matters](#why-this-matters) - The confirmation bias thing explained
-- [Benchmark](#benchmark-perplexity-vs-websearch) - Actual speed and quality numbers
-- [Research Persistence](#research-persistence) - Every search saved to markdown
+- [Benchmark](#benchmark-perplexity-vs-websearch) - Historical speed and quality observations
+- [Research Persistence](#research-persistence) - Supported responses and saved files
 - [Troubleshooting](#troubleshooting) - Common issues and fixes
+- [Local validation](#local-validation) - Check a checkout without an API key
 
 ---
 
@@ -28,41 +31,59 @@ When you ask Claude to search for something:
 
 No MCP server. Just direct API calls using your Perplexity key stored in `~/.claude/settings.json`. This keeps things simple and avoids the complexity of managing another background process. The curl approach also means you can see exactly what's being sent and received if you ever need to debug.
 
-The hook intercepts WebSearch calls before they execute, checks if you have a valid API key configured, and redirects Claude to use the Perplexity API instead. If something's misconfigured, it'll tell you what's wrong rather than silently failing.
+The hook intercepts WebSearch calls before they execute and checks for a nonempty configured key. It does not validate that key or make the search itself: it blocks WebSearch with instructions for Claude to run `curl`. A later API failure is separate from the redirect hook.
 
 ---
 
 ## Setup
 
-**Step 1:** Grab a Perplexity API key at https://www.perplexity.ai/account/api/group
+### Prerequisites
 
-You'll need a Perplexity account (free to create) and then navigate to API settings. The API has usage-based pricing - most queries cost less than a penny. They give you some free credits to start.
+Use macOS or Linux with Claude Code, Git, Bash, `curl`, `jq`, and Python 3 available on the PATH inherited by Claude Code. The Python helpers use the standard library; there is no package install or MCP server to start. Check your terminal:
 
-**Step 2:** Add the marketplace:
-
+```bash
+claude --version
+git --version
+bash --version
+curl --version
+jq --version
+python3 --version
 ```
+
+Install any missing prerequisite with your platform's package manager, then restart Claude Code so its hooks inherit the updated PATH.
+
+### Install and verify
+
+Run these commands in your terminal, outside a Claude Code session:
+
+```bash
+claude plugin marketplace add justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
+claude plugin install lej-pp-search@lej-marketplace --scope user
+claude plugin list --json
+```
+
+The list should contain `lej-pp-search@lej-marketplace`, `"scope": "user"`, and `"enabled": true`. This confirms installation only; it does not test the API or saving. See the [Claude Code plugin command reference](https://code.claude.com/docs/en/plugins/cli-reference) for other installation scopes.
+
+Inside an interactive Claude Code session, the equivalent commands are:
+
+```text
 /plugin marketplace add justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude
-```
-
-**Step 3:** Install:
-
-```
 /plugin install lej-pp-search@lej-marketplace
 ```
 
-**Where to run these:**
-- **VSCode**: Open Claude Code in the sidebar, type commands in the chat
-- **Terminal**: Run `claude`, then type at the prompt
+Start a new Claude Code session after installation. Run `/lej-pp-search:help` to confirm the plugin's commands are available.
 
-The `/` matters - tells Claude it's a command, not a question. Without the slash, Claude will try to answer "plugin install lej-pp-search" as if you're asking about plugins.
+### Legacy key setup
 
-**Step 4:** Run setup:
+Obtain an API key from the [Perplexity API console](https://www.perplexity.ai/account/api/group). API billing is separate from a consumer subscription; check [current API pricing](https://docs.perplexity.ai/docs/getting-started/pricing) before making requests. Installation and local validation do not require a key or make paid API requests.
 
-```
+The current setup command attempts a legacy Sonar request to verify a key:
+
+```text
 /lej-pp-search:setup
 ```
 
-Walks you through adding your API key. Or just add it manually to `~/.claude/settings.json`:
+It can fail at that request even with a valid key. The current hook reads this **legacy** structure in `~/.claude/settings.json`:
 
 ```json
 {
@@ -72,7 +93,9 @@ Walks you through adding your API key. Or just add it manually to `~/.claude/set
 }
 ```
 
-After setup, restart Claude Code to ensure the plugin loads correctly. The hook needs to register at session start.
+Merge fields into existing settings rather than replacing the file. This is the legacy hook's input, not Claude Code's supported environment setting: Claude Code uses `env`. Setting only `env.PERPLEXITY_API_KEY` does not satisfy the current hook, and exporting the variable alone does not satisfy it either. PR #3 owns that compatibility fix. The scripts also hard-code `$HOME/.claude/settings.json`; changing only `CLAUDE_CONFIG_DIR` does not relocate their key lookup.
+
+After any settings change, start a new session. A redirect message proves only that the hook found a key; check the API response and the saved file separately. Never print or share your key while diagnosing a failure.
 
 ---
 
@@ -82,7 +105,7 @@ After setup, restart Claude Code to ensure the plugin loads correctly. The hook 
 
 ## The Four Models
 
-Perplexity offers different models optimized for different use cases. The plugin guides Claude to pick the right one based on your query, but here's what each does:
+These are the legacy model names used by the current plugin, not a current Perplexity model catalog. The following costs and speeds are historical examples. For current API choices and migration guidance, use the [Perplexity quickstart](https://docs.perplexity.ai/docs/getting-started/quickstart) and PR #3.
 
 | Model | What It's For | Cost | Speed |
 |-------|---------------|------|-------|
@@ -132,7 +155,7 @@ This is especially important for fast-moving domains: AI/ML libraries, JavaScrip
 
 ## Benchmark: Perplexity vs WebSearch
 
-Ran a head-to-head comparison using professional filmmaking queries (camera specs, workflows, technical comparisons). These are the kind of queries where accuracy and recency matter.
+The original README reported this comparison using professional filmmaking queries. The repository does not include a runnable benchmark or raw timing logs for it, and the November 2026 local documentation audit did not reproduce these API timings. Treat the numbers and prices in this section as historical observations, not current guarantees.
 
 ### Speed
 
@@ -143,7 +166,7 @@ Ran a head-to-head comparison using professional filmmaking queries (camera spec
 | RED vs ARRI dynamic range | 7.0s | 29.7s | 4.2x faster |
 | **Average** | **6.8s** | **36.2s** | **5.3x faster** |
 
-**Perplexity is consistently 5x faster.** This adds up quickly when you're doing research-heavy work.
+The reported average in this sample was 5.3x faster. Actual latency depends on the API, query, and service conditions.
 
 ### Quality
 
@@ -185,7 +208,9 @@ directory on the first recognized result; starting a session does not create it.
 The save hook rejects a `.perplexity-research` symlink and gives each result a unique filename, so repeated
 searches in the same second do not overwrite earlier results.
 
-Every Perplexity search gets saved to `.perplexity-research/` in your current directory. Each search creates a timestamped markdown file with:
+The save hook writes to `.perplexity-research/` relative to its working directory when a Bash command contains `api.perplexity.ai` and its string response contains `choices[0].message.content`. It skips unrelated commands and unsupported/error response shapes without creating a file. It does not currently handle object-shaped Bash responses or Agent API output (see PR #3).
+
+Each recognized response creates a timestamped Markdown file with:
 
 - Original query
 - Full synthesized answer
@@ -194,18 +219,27 @@ Every Perplexity search gets saved to `.perplexity-research/` in your current di
 
 Research doesn't disappear when conversation context gets compacted. Reference past searches, share them with teammates, use them as documentation. The files are plain markdown, so they work with any editor or documentation system.
 
-Example file structure:
-```
+Filenames contain local date and time, a sanitized query prefix (up to 50 characters), and a unique UUID suffix. For example:
+
+```text
 .perplexity-research/
-├── 2025-01-14_react-19-new-features.md
-├── 2025-01-14_nextjs-15-app-router-changes.md
-└── 2025-01-15_prisma-vs-drizzle-comparison.md
+└── 2026-11-06-10-30-00-react-features-0123456789abcdef0123456789abcdef.md
 ```
+
+Existing directory permissions are preserved. New directories use mode `0700`, and new files use mode `0600`; share files deliberately if teammates need them. Query extraction supports literal JSON curl bodies, not shell-expanded variables or `@file` request bodies.
 
 ## Troubleshooting
 
+**Installation succeeds but searches fail with `403` or `agent_api_migration_required`:**
+The installed legacy endpoint is incompatible with the API. Follow PR #3; reinstalling the same version or replacing a valid key does not migrate it.
+
+**`jq: command not found` or `python3: command not found`:**
+Run the prerequisite checks in the same environment that launches Claude Code. Installing the plugin does not install these tools.
+
 **"401 Unauthorized" errors:**
 Your API key is missing or invalid. Run `/lej-pp-search:setup` to reconfigure, or check that `PERPLEXITY_API_KEY` is set correctly in `~/.claude/settings.json`.
+
+The legacy hook reads `environmentVariables.PERPLEXITY_API_KEY`, not `env` or the shell environment. It checks presence only. An authentication failure from the remote API requires a separate key/billing check in your API console.
 
 **WebSearch still works (not being redirected):**
 The plugin might not be loaded. Check `~/.claude/settings.json` has `"lej-pp-search@lej-marketplace": true` in `enabledPlugins`. Restart Claude Code after enabling.
@@ -214,7 +248,34 @@ The plugin might not be loaded. Check `~/.claude/settings.json` has `"lej-pp-sea
 If you see MCP-related errors, you may have an old version with incorrect configuration. Update to v1.0.4+ which removed the MCP server in favor of direct curl calls.
 
 **Searches not being saved:**
-Check that Claude has write permissions to your current directory. The `.perplexity-research/` folder is created automatically on first search.
+First check the compatibility note: an object-shaped Bash response or Agent API response is silently skipped by this version. Check that the Markdown file exists. The hook also writes `Research saved to ...` to stderr, which successful hooks do not surface in the normal conversation; use [Claude Code hook debug logging](https://code.claude.com/docs/en/hooks#exit-code-0) to inspect it. An API answer alone does not confirm a save.
+
+If the hook reports `Research not saved: unsafe or inaccessible research path.`, check that its working directory is writable and `.perplexity-research` is a real directory, not a symlink or regular file. Session start does not create the directory. Preserve any existing file or research before resolving a path conflict. For manual recovery of an answer, use the [private writer procedure](plugins/lej-pp-search/skills/lej-pp-search/SKILL.md#persisting-research-results) instead of rerunning a paid search.
+
+**Installed code has not changed after a fix merged:**
+Refresh the marketplace, update the installed plugin, and start a new session:
+
+```bash
+claude plugin marketplace update lej-marketplace
+claude plugin update lej-pp-search@lej-marketplace --scope user
+claude plugin list --json
+```
+
+The manifest still declares version `2.3.0`. If Claude reports it is already current but the cached files are stale, uninstall and reinstall the plugin using the commands below; do not edit cached source or the plugin registry JSON by hand.
+
+## Local validation
+
+To validate a source checkout without a key or API request, run:
+
+```bash
+git clone https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude.git
+cd LEJ-Perplexity-Powered-Search-for-Claude
+claude plugin validate .
+claude plugin validate plugins/lej-pp-search
+python3 -m unittest discover -v
+```
+
+The tests use temporary projects and synthetic responses to exercise hook behavior and private file writes. They do not verify live API access or an interactive Claude session. The marketplace validator can report a missing-icon advisory; validation still succeeds.
 
 ## Need Help?
 
@@ -222,20 +283,25 @@ Run `/lej-pp-search:help` anytime for a quick reference of available commands an
 
 ## Uninstall
 
-**Quick** (keeps API key for easy reinstall):
-```
-/plugins uninstall lej-pp-search@lej-marketplace
-```
+To remove the user-scoped installation from your terminal:
 
-**Full cleanup** (removes plugin, marketplace cache, and all cached data):
 ```bash
-rm -rf ~/.claude/plugins/cache/lej-marketplace/lej-pp-search
-rm -rf ~/.claude/plugins/marketplaces/lej-marketplace
-jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/known_marketplaces.json && mv /tmp/known_marketplaces.json ~/.claude/plugins/known_marketplaces.json
-jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
+claude plugin uninstall lej-pp-search@lej-marketplace --scope user
+claude plugin list --json
 ```
 
-To also remove the API key, use a private temporary file beside your settings.
+The plugin should be absent from the list. For an installation at another scope, use that scope instead. Inside an interactive Claude Code session, use `/plugin uninstall lej-pp-search@lej-marketplace`.
+
+Optional: remove the marketplace too, if you do not use any of its other plugins:
+
+```bash
+claude plugin marketplace remove lej-marketplace --scope user
+claude plugin marketplace list --json
+```
+
+Removing the marketplace can uninstall its other plugins at that scope. These commands leave this plugin's manually stored API key and project `.perplexity-research/` files in place. They do not revoke the key at Perplexity.
+
+Optional: to also remove the API key from the default settings file, use a private temporary file beside your settings.
 This preserves other settings and makes the updated file readable only by your user:
 
 ```bash

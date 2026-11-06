@@ -291,27 +291,8 @@ When the user asks to "turn auto-redirect back on" or similar:
 
 ## Uninstall Instructions
 
-When the user asks to "uninstall completely", run this bash script:
-
-```bash
-# Full uninstall of lej-pp-search
-rm -rf ~/.claude/plugins/cache/lej-marketplace/lej-pp-search
-rm -rf ~/.claude/plugins/marketplaces/lej-marketplace
-jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/known_marketplaces.json && mv /tmp/known_marketplaces.json ~/.claude/plugins/known_marketplaces.json
-jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
-echo "LEJ PP Search fully removed."
-```
-
-Optionally also remove the API key from settings:
-```bash
-(
-  set -e
-  settings_tmp=$(mktemp "$HOME/.claude/settings.json.XXXXXX")
-  trap 'rm -f "$settings_tmp"' EXIT
-  jq 'del(.env.PERPLEXITY_API_KEY, .environmentVariables.PERPLEXITY_API_KEY)' \
-    "$HOME/.claude/settings.json" > "$settings_tmp"
-  mv "$settings_tmp" "$HOME/.claude/settings.json"
-)
-```
-
-Confirm: "LEJ PP Search fully removed. Restart Claude Code to complete."
+Follow the [README uninstall procedure](../../../../README.md#uninstall). Use
+Claude Code's plugin manager for the installed scope and verify the resulting
+plugin list. Do not edit registry JSON or remove cache directories by hand.
+The README also covers optional marketplace removal and private API-key cleanup.
+Project research files remain in place; uninstalling does not revoke a remote key.
