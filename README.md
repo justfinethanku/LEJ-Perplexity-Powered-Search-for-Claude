@@ -180,8 +180,9 @@ The combination is especially powerful for:
 ## Research Persistence
 
 Automatic saving requires Bash, `jq`, and Python 3 on macOS or Linux. New research
-files are readable and writable only by your user. The save hook rejects a
-`.perplexity-research` symlink and gives each result a unique filename, so repeated
+files are readable and writable only by your user. The writer creates the research
+directory on the first recognized result; starting a session does not create it.
+The save hook rejects a `.perplexity-research` symlink and gives each result a unique filename, so repeated
 searches in the same second do not overwrite earlier results.
 
 Every Perplexity search gets saved to `.perplexity-research/` in your current directory. Each search creates a timestamped markdown file with:
