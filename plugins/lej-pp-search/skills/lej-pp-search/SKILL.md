@@ -127,7 +127,7 @@ The response includes:
 - `origin_url` — Source page
 - `title` — Description (use this as the link text)
 
-Format: `[title](image_url)` — Makes them clickable in VSCode
+Use the image title as the link label and the returned `image_url` as its target.
 
 ### reasoning_effort (for sonar-reasoning-pro)
 
@@ -351,7 +351,14 @@ echo "LEJ PP Search fully removed."
 
 Optionally also remove the API key from settings:
 ```bash
-jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json
+(
+  set -e
+  settings_tmp=$(mktemp "$HOME/.claude/settings.json.XXXXXX")
+  trap 'rm -f "$settings_tmp"' EXIT
+  jq 'del(.env.PERPLEXITY_API_KEY, .environmentVariables.PERPLEXITY_API_KEY)' \
+    "$HOME/.claude/settings.json" > "$settings_tmp"
+  mv "$settings_tmp" "$HOME/.claude/settings.json"
+)
 ```
 
 Confirm: "LEJ PP Search fully removed. Restart Claude Code to complete."

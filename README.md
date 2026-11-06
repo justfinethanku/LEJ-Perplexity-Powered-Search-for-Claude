@@ -179,6 +179,11 @@ The combination is especially powerful for:
 
 ## Research Persistence
 
+Automatic saving requires Bash, `jq`, and Python 3 on macOS or Linux. New research
+files are readable and writable only by your user. The save hook rejects a
+`.perplexity-research` symlink and gives each result a unique filename, so repeated
+searches in the same second do not overwrite earlier results.
+
 Every Perplexity search gets saved to `.perplexity-research/` in your current directory. Each search creates a timestamped markdown file with:
 
 - Original query
@@ -229,7 +234,19 @@ jq 'del(."lej-marketplace")' ~/.claude/plugins/known_marketplaces.json > /tmp/kn
 jq 'del(.plugins["lej-pp-search@lej-marketplace"])' ~/.claude/plugins/installed_plugins.json > /tmp/installed_plugins.json && mv /tmp/installed_plugins.json ~/.claude/plugins/installed_plugins.json
 ```
 
-To also remove API key: `jq 'del(.environmentVariables.PERPLEXITY_API_KEY)' ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json`
+To also remove the API key, use a private temporary file beside your settings.
+This preserves other settings and makes the updated file readable only by your user:
+
+```bash
+(
+  set -e
+  settings_tmp=$(mktemp "$HOME/.claude/settings.json.XXXXXX")
+  trap 'rm -f "$settings_tmp"' EXIT
+  jq 'del(.env.PERPLEXITY_API_KEY, .environmentVariables.PERPLEXITY_API_KEY)' \
+    "$HOME/.claude/settings.json" > "$settings_tmp"
+  mv "$settings_tmp" "$HOME/.claude/settings.json"
+)
+```
 
 Then restart Claude Code.
 
