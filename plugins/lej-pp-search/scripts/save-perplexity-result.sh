@@ -3,7 +3,8 @@
 # PostToolUse hook that automatically saves Perplexity API responses
 # Receives JSON via stdin with tool_input.command and tool_response
 
-set -e
+set -eo pipefail
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 # Read stdin (hook input JSON)
 INPUT=$(cat)
@@ -47,10 +48,6 @@ COST=$(echo "$TOOL_RESPONSE" | jq -r '.usage.cost.total_cost // "unknown"' 2>/de
 TIMESTAMP=$(date +%Y-%m-%d-%H-%M-%S)
 # Create slug from query (lowercase, spaces to dashes, remove special chars, limit length)
 SLUG=$(echo "$QUERY" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-' | cut -c1-50)
-FILENAME=".perplexity-research/${TIMESTAMP}-${SLUG}.md"
-
-# Ensure directory exists
-mkdir -p .perplexity-research
 
 # Build citations section using printf for proper newlines
 CITATIONS_MD=""
@@ -77,8 +74,9 @@ if [[ "$SEARCH_RESULTS" != "[]" ]] && [[ "$SEARCH_RESULTS" != "null" ]] && [[ -n
   done <<< "$(echo "$SEARCH_RESULTS" | jq -c '.[]' 2>/dev/null)"
 fi
 
-# Write markdown file
-cat > "$FILENAME" << MARKDOWN
+# Keep the response as data; the writer creates a private file without following
+# repository-controlled symlinks or reopening a pathname after validation.
+cat << MARKDOWN | python3 "$SCRIPT_DIR/write-research.py" "${TIMESTAMP}-${SLUG}"
 # ${QUERY}
 
 **Query:** ${QUERY}
@@ -108,8 +106,5 @@ ${SEARCH_RESULTS_MD:-"No search results available."}
 
 *Saved automatically by LEJ PP Search*
 MARKDOWN
-
-# Output confirmation (will be shown in hook output)
-echo "Research saved to ${FILENAME}" >&2
 
 exit 0
