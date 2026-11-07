@@ -151,9 +151,9 @@ class ResearchSecurityTests(unittest.TestCase):
                     target = (document.parent / link[1]).resolve()
                     self.assertEqual(target, (root / 'README.md').resolve())
                     text = target.read_text()
-                command = re.search(r'```bash\n(\(\n  set -e\n  settings_tmp=.*?)```', text, re.S)[1]
+                command = re.search(r'```bash\n(.*?)```', text.split('Optional: to also remove the API key', 1)[1], re.S)[1]
                 settings_dir = self.root / 'home' / '.claude'
-                settings_dir.mkdir(parents=True, exist_ok=True)
+                settings_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
                 settings = settings_dir / 'settings.json'
                 data = {'env': {'PERPLEXITY_API_KEY': 'synthetic', 'OTHER_KEY': 'preserve'},
                         'environmentVariables': {'PERPLEXITY_API_KEY': 'synthetic-legacy'},

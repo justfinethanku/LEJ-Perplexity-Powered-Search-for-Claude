@@ -261,6 +261,14 @@ claude plugin update lej-pp-search@lej-marketplace --scope user
 claude plugin list --json
 ```
 
+After an update, or if one fails or is interrupted, inspect
+`claude plugin list --json`. Check the qualified plugin, scope, version and any
+`errors` field. With a local marketplace, Claude Code can report a successful
+update even when the plugin manifest is invalid. Restore the complete trusted
+checkout and repeat the update, then verify the list has no errors. Keep other
+marketplace plugins and project settings in place; retry the qualified plugin at
+its original scope rather than removing the entire marketplace to recover it.
+
 The manifest declares version `2.3.1`. If Claude reports it is already current but the cached files are stale, uninstall and reinstall the plugin using the commands below; do not edit cached source or the plugin registry JSON by hand.
 
 ## Local validation
@@ -301,19 +309,101 @@ claude plugin marketplace list --json
 
 Removing the marketplace can uninstall its other plugins at that scope. These commands leave this plugin's manually stored API key and project `.perplexity-research/` files in place. They do not revoke the key at Perplexity.
 
-Optional: to also remove the API key from the default settings file, use a private temporary file beside your settings.
-This preserves other settings and makes the updated file readable only by your user:
+Optional: to also remove the API key from the default settings file, first stop
+Claude Code sessions and other programs that write that file. Run this Python 3
+procedure from your terminal. The `.claude` directory must be owned by you and
+not writable by your group or other users. It refuses symlinks, hard links, non-regular files,
+invalid settings and changes observed before replacement; it never prints settings.
+Other settings are retained in a private, atomically replaced file. This is not a
+transaction with other programs: keep them stopped until it finishes.
 
 ```bash
-(
-  set -e
-  settings_tmp=$(mktemp "$HOME/.claude/settings.json.XXXXXX")
-  trap 'rm -f "$settings_tmp"' EXIT
-  jq 'del(.env.PERPLEXITY_API_KEY, .environmentVariables.PERPLEXITY_API_KEY)' \
-    "$HOME/.claude/settings.json" > "$settings_tmp"
-  mv "$settings_tmp" "$HOME/.claude/settings.json"
-)
+python3 - <<'PY'
+import json
+import os
+import signal
+import stat
+import sys
+import uuid
+
+
+def identity(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_uid,
+            info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def remove_key():
+    directory = os.path.join(os.path.expanduser('~'), '.claude')
+    directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    temporary = None
+    try:
+        directory_info = os.fstat(directory_fd)
+        if directory_info.st_uid != os.getuid() or directory_info.st_mode & 0o022:
+            raise ValueError('Unsafe settings directory')
+        fd = os.open('settings.json', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                     dir_fd=directory_fd)
+        with os.fdopen(fd, 'rb') as source:
+            before = os.fstat(source.fileno())
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+                    or before.st_uid != os.getuid()):
+                raise ValueError('Unsafe settings file')
+            original = source.read()
+            data = json.loads(original)
+            if not isinstance(data, dict):
+                raise ValueError('Settings must be an object')
+            for field in ('env', 'environmentVariables'):
+                values = data.get(field)
+                if values is not None:
+                    if not isinstance(values, dict):
+                        raise ValueError('Environment settings must be objects')
+                    values.pop('PERPLEXITY_API_KEY', None)
+            candidate = 'settings.json.' + uuid.uuid4().hex
+            output_fd = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                                0o600, dir_fd=directory_fd)
+            temporary = candidate
+            with os.fdopen(output_fd, 'w', encoding='utf-8') as output:
+                json.dump(data, output, indent=2, ensure_ascii=False)
+                output.write('\n')
+                output.flush()
+                os.fsync(output.fileno())
+            current = os.stat('settings.json', dir_fd=directory_fd, follow_symlinks=False)
+            parent = os.stat(directory, follow_symlinks=False)
+            if (identity(current) != identity(before)
+                    or identity(os.fstat(source.fileno())) != identity(before)
+                    or (parent.st_dev, parent.st_ino) !=
+                       (directory_info.st_dev, directory_info.st_ino)):
+                raise ValueError('Settings changed; retry after stopping other writers')
+            os.replace(temporary, 'settings.json', src_dir_fd=directory_fd,
+                       dst_dir_fd=directory_fd)
+            temporary = None
+    finally:
+        try:
+            if temporary is not None:
+                os.unlink(temporary, dir_fd=directory_fd)
+        finally:
+            os.close(directory_fd)
+
+
+def interrupted(signum, frame):
+    raise SystemExit(128 + signum)
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, interrupted)
+    try:
+        remove_key()
+    except (OSError, ValueError, UnicodeError):
+        sys.exit('Key cleanup failed; inspect the settings path and stop other writers before retrying.')
+    print('Removed the key from default settings; other key sources are unchanged.')
+PY
 ```
+
+On failure, inspect the path without printing credentials, resolve ownership or
+stop the other writer, and retry. Do not replace the original with an old backup
+of the entire settings file. A forced kill or power loss can leave a private
+`settings.json.<random>` temporary file containing other settings; handle it as
+sensitive data. This procedure does not remove keys from the shell environment,
+custom config directories or secret managers, and does not revoke a remote key.
 
 Then restart Claude Code.
 
