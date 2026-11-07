@@ -285,6 +285,22 @@ python3 -m unittest discover -v
 
 The tests use temporary projects and synthetic responses to exercise hook behavior and private file writes. They do not verify live API access or an interactive Claude session. The marketplace validator can report a missing-icon advisory; validation still succeeds.
 
+To also test the update and uninstall commands against your installed Claude Code
+CLI, run this opt-in suite as a non-root user on macOS or Linux:
+
+```bash
+LEJ_TEST_NATIVE_CLI=1 python3 -m unittest discover -v
+```
+
+These tests create a temporary local marketplace with two plugins and isolated
+home, config, and project directories. They inject filesystem permission failures,
+retry scoped updates and removals, and check that newer settings, other plugins,
+other installation scopes, and research survive. They run plugin-manager commands
+and a synthetic hook control, without a model or API request. Fixture versions
+exercise lifecycle transitions using the current source, not older release code.
+Without the opt-in, CLI, or non-root POSIX environment, the native cases are
+reported as skipped; the hook and settings-cleanup tests still run.
+
 ## Need Help?
 
 Run `/lej-pp-search:help` anytime for a quick reference of available commands and current configuration status.

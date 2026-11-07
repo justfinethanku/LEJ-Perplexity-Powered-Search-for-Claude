@@ -217,6 +217,46 @@ with patch.object(os, 'fsync', fault):
         self.assertEqual(stat.S_IMODE(files[0].stat().st_mode), 0o600)
         self.assertNotIn('PERPLEXITY_API_KEY', json.loads(files[0].read_text())['env'])
 
+    def test_interrupted_cleanup_retries_latest_settings_instead_of_old_output(self):
+        for fault in ('term', 'kill', 'replace-failure'):
+            with self.subTest(fault=fault):
+                self.settings.write_bytes(self.original)
+                self.assertNotEqual(self.run_cleanup(fault).returncode, 0)
+                self.assertEqual(self.settings.read_bytes(), self.original)
+                leftovers = {path: path.read_bytes()
+                             for path in self.directory.glob('settings.json.*')}
+                latest = json.loads(self.settings.read_text())
+                latest['env']['OTHER'] = 'edited after interruption'
+                latest['permissions']['allow'].append('Write')
+                latest['enabledPlugins']['new-plugin@market'] = True
+                self.settings.write_text(json.dumps(latest))
+                for field in ('env', 'environmentVariables'):
+                    latest[field].pop('PERPLEXITY_API_KEY')
+                for _ in range(2):
+                    result = self.run_cleanup()
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(json.loads(self.settings.read_text()), latest)
+                    self.assertEqual(stat.S_IMODE(self.settings.stat().st_mode), 0o600)
+                # SIGKILL output is private but stale: retry must neither use it
+                # as a backup nor delete an arbitrary pre-existing sibling.
+                self.assertEqual({path: path.read_bytes() for path in
+                                  self.directory.glob('settings.json.*')}, leftovers)
+                for path in leftovers:
+                    self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+                    path.unlink()
+
+    def test_retry_after_concurrent_edit_keeps_new_marketplace_enablement(self):
+        self.assertNotEqual(self.run_cleanup('concurrent').returncode, 0)
+        latest = json.loads(self.settings.read_text())
+        latest['enabledPlugins']['installed-after-failure@market'] = True
+        self.settings.write_text(json.dumps(latest))
+        result = self.run_cleanup()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for field in ('env', 'environmentVariables'):
+            latest[field].pop('PERPLEXITY_API_KEY')
+        self.assertEqual(json.loads(self.settings.read_text()), latest)
+        self.assert_no_temporary()
+
 
 if __name__ == '__main__':
     unittest.main()
