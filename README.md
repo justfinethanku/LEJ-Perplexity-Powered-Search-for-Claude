@@ -18,6 +18,7 @@ The difference matters more than you'd think. When Claude searches for "React 19
 - [Benchmark](#benchmark-perplexity-vs-websearch) - Historical speed and quality observations
 - [Research Persistence](#research-persistence) - Supported responses and saved files
 - [Troubleshooting](#troubleshooting) - Common issues and fixes
+- [Recover an interrupted update or removal](#recover-an-interrupted-update-or-removal) - Select the original profile, project, and scope
 - [Local validation](#local-validation) - Check a checkout without an API key
 
 ---
@@ -269,7 +270,50 @@ checkout and repeat the update, then verify the list has no errors. Keep other
 marketplace plugins and project settings in place; retry the qualified plugin at
 its original scope rather than removing the entire marketplace to recover it.
 
-The manifest declares version `2.3.1`. If Claude reports it is already current but the cached files are stale, uninstall and reinstall the plugin using the commands below; do not edit cached source or the plugin registry JSON by hand.
+The manifest declares version `2.3.1`. If Claude reports it is already current but the cached files are stale, use the [recovery checks](#recover-an-interrupted-update-or-removal) before uninstalling and reinstalling the plugin; do not edit cached source or the plugin registry JSON by hand.
+
+## Recover an interrupted update or removal
+
+Run recovery commands from your terminal, outside a Claude Code session. These
+checks were exercised with Claude Code 2.1.319 on Linux using an isolated local
+marketplace, two projects, and filesystem permission failures. They do not verify
+live API access, remote downloads, or which code an existing session has loaded.
+
+1. Use the same home and configuration profile as the original installation.
+   If you set `CLAUDE_CONFIG_DIR`, keep that value for every recovery command;
+   another profile can show a different installation list. For `project` or
+   `local` scope, change to the original project directory before continuing.
+   `--scope project` or `--scope local` selects the current project; running it
+   in another project can change that project's installation instead.
+2. Run `claude plugin list --json`. Find `lej-pp-search@lej-marketplace` and
+   match its `scope` and, for project/local entries, `projectPath`. Several rows
+   for this plugin can be valid. Check `version` and any `errors` field on the
+   intended row. `projectEnabled` describes enablement for the current project;
+   it does not tell you whether an installation record was removed.
+3. Resolve the reported problem before retrying. For a permissions error, check
+   the named file and its parent directory without printing settings or keys.
+   For an invalid local marketplace, restore its complete trusted checkout.
+   A failed update can create a new cache directory while the installed record
+   still names the old version. Cache existence alone does not prove recovery;
+   local sources can also report `readFromFolder` and `folderVersion` separately.
+4. Retry the [update command](#troubleshooting) or [uninstall command](#uninstall)
+   for the qualified plugin, replacing `--scope user` with the original scope
+   when needed. Keep the selected profile and project from step 1. If removal
+   already succeeded, do not switch scopes to make a repeated uninstall succeed.
+   If your goal is to reinstall, run
+   `claude plugin install lej-pp-search@lej-marketplace --scope user`, replacing
+   `user` with the scope you deliberately removed.
+5. Run `claude plugin list --json` again. After update, confirm the intended
+   row's version and absence of errors. After uninstall, confirm only the
+   intended scope/project row is absent; other installations can remain. Check
+   that other plugins, newer unrelated settings, and project research remain.
+   Start a new Claude Code session after a successful update or reinstall.
+
+Keep marketplace registration and unrelated installations in place during
+recovery. Do not replay an old backup of the entire settings file over newer
+edits, or remove the marketplace just to retry one plugin. Removing this plugin
+does not remove its manually stored key or project research; optional cleanup
+remains in [Uninstall](#uninstall).
 
 ## Local validation
 
@@ -314,7 +358,12 @@ claude plugin uninstall lej-pp-search@lej-marketplace --scope user
 claude plugin list --json
 ```
 
-The plugin should be absent from the list. For an installation at another scope, use that scope instead. Inside an interactive Claude Code session, use `/plugin uninstall lej-pp-search@lej-marketplace`.
+The user-scoped row should be absent from the list; project/local installations
+can remain. For an installation at another scope, use that scope and its original
+project directory instead. Keep the original configuration profile throughout;
+see [recovery checks](#recover-an-interrupted-update-or-removal) if removal fails
+or its result is unclear. Inside an interactive Claude Code session, use
+`/plugin uninstall lej-pp-search@lej-marketplace`.
 
 Optional: remove the marketplace too, if you do not use any of its other plugins:
 
