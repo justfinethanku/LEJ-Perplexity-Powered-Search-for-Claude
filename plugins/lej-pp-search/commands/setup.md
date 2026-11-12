@@ -36,14 +36,14 @@ If they select "I have my key ready" or provide a custom response with their key
 Before saving, verify the key works by making a test API call. Substitute the key the user just provided for `THE_API_KEY_HERE`. Do not echo the command or the key:
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer THE_API_KEY_HERE" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar", "messages": [{"role": "user", "content": "Say hi"}], "max_tokens": 5}'
+  -d '{"effort": "fast", "input": "Say hi", "max_output_tokens": 16}'
 ```
 
 **Check the response:**
-- If response contains `"choices"` and `"id"` → Key is valid, proceed to Step 4
+- If response contains `"output"` and `"id"` → Key is valid, proceed to Step 4
 - If response contains `401` or `Unauthorized` → Key is invalid, inform user and ask if they want to try again
 - If response contains other errors → Show error to user and ask if they want to try again
 
@@ -73,7 +73,7 @@ Tell the user:
 
 The plugin will automatically redirect WebSearch to Perplexity. Just search normally and you'll get Perplexity-powered results.
 
-**Note:** You may need to start a new session for the MCP server to pick up the new key.
+**Note:** Start a new session so the hooks pick up the new key.
 
 Run `/lej-pp-search:help` for more info on available tools and commands."
 
@@ -82,4 +82,4 @@ Run `/lej-pp-search:help` for more info on available tools and commands."
 - Never log or display the API key after receiving it
 - Preserve all other keys in settings.json
 - If settings.json doesn't exist, create it with proper structure
-- The verification call uses minimal tokens (max_tokens: 5) to minimize cost
+- The verification call uses the cheap `fast` effort level with `max_output_tokens: 16` to minimize cost

@@ -65,7 +65,8 @@ class HookLifecycleTests(unittest.TestCase):
     def assert_redirect_instructions(self, result, secret):
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn('WebSearch is blocked', result.stderr)
-        self.assertIn('https://api.perplexity.ai/chat/completions', result.stderr)
+        self.assertIn('https://api.perplexity.ai/v1/agent', result.stderr)
+        self.assertIn('"effort": "fast"', result.stderr)
         self.assertIn('YOUR_QUERY_HERE', result.stderr)
         self.assertIn('${PERPLEXITY_API_KEY:-', result.stderr)
         self.assertIn('Do not print the API key', result.stderr)
@@ -75,13 +76,15 @@ class HookLifecycleTests(unittest.TestCase):
     def response(self, answer='Lifecycle answer [1]'):
         return {
             'tool_name': 'Bash',
-            'tool_input': {'command': '''curl https://api.perplexity.ai/chat/completions -d '{"messages":[{"role":"user","content":"lifecycle"}]}' '''},
-            # The current parser accepts a legacy string. PR #3 separately
-            # owns the Bash stdout object and Agent API migration.
-            'tool_response': json.dumps({
-                'choices': [{'message': {'content': answer}}],
-                'citations': ['https://example.com/lifecycle'],
-            }),
+            'tool_input': {'command': '''curl https://api.perplexity.ai/v1/agent -d '{"effort":"fast","input":"lifecycle"}' '''},
+            # Claude Code delivers Bash output as an object with stdout.
+            'tool_response': {'stdout': json.dumps({
+                'output': [
+                    {'type': 'search_results', 'results': [
+                        {'id': 1, 'url': 'https://example.com/lifecycle', 'title': 'L', 'snippet': 'S'}]},
+                    {'type': 'message', 'content': [{'type': 'output_text', 'text': answer}]},
+                ],
+            }), 'stderr': '', 'interrupted': False},
         }
 
     def test_session_context_does_not_allocate_research_storage(self):
