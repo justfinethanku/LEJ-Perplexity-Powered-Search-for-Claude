@@ -5,6 +5,18 @@ All notable changes to LEJ PP Search will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-11-11
+
+### Changed
+
+- **Agent API migration.** Perplexity retired Sonar Chat Completions on 2026-09-27, so every search returned `403 agent_api_migration_required`. All calls now go to `POST /v1/agent` with `effort` (default `fast`) and `input`. Search options moved onto the `web_search` tool, images onto `image_search`. Based on PR #3 by @jonmehlman, rebuilt on the 2.3.1 hardened hooks and updated from `preset` to the documented `effort` field.
+
+### Fixed
+
+- The save hook now reads Claude Code's Bash `tool_response` object (`stdout`), so automatic saving works again. A plain string is still accepted.
+- Receipts parse the typed `output` array: answer text from `output_text` or `message` items, sources from every `search_results` item with their citation ids, plus the effort used.
+- Query titles come from the `input` field (string or input-item array).
+
 ## [2.3.1] - 2026-11-06
 
 ### Fixed

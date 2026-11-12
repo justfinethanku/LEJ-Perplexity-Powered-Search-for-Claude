@@ -20,63 +20,57 @@ This plugin redirects web searches to Perplexity, which searches to **discover**
 
 ---
 
-## Available Tools
+## Search Effort Levels
 
-### perplexity_search
-**Fast URL/link retrieval**
+The plugin calls Perplexity's Agent API (`/v1/agent`) with an `effort` level that sets how deep it researches. Costs and times below were measured on real queries.
+
+### fast (default)
+**Quick lookups and everyday questions**
 
 ```
-Speed: Fast | Cost: Low
-Best for: Raw URLs, titles, snippets
+Speed: ~5s | Cost: ~$0.002
+Best for: Facts, definitions, current versions, quick summaries
 ```
-
-Use when you just need links and basic info.
 
 ---
 
-### perplexity_ask
-**Quick Q&A with citations**
+### low
+**Light multi-step research**
 
 ```
-Speed: Moderate | Cost: Moderate
-Model: sonar-pro
+Speed: ~1 min | Cost: ~$0.01
+Best for: Questions that need a few searches
 ```
-
-Use for synthesized answers with source citations.
 
 ---
 
-### perplexity_research
-**Deep dives and comprehensive analysis**
+### medium
+**Multi-hop research and comparisons**
 
 ```
-Speed: Slow (30s-5min) | Cost: High
-Best for: Deep analysis, comprehensive reports, 2x citations
+Speed: ~1 min | Cost: ~$0.02
+Best for: Tradeoffs, X vs Y, chaining evidence across many sources
 ```
-
-Use for thorough research and detailed reports.
 
 ---
 
-### perplexity_reason
-**Step-by-step logical breakdowns**
+### high / xhigh
+**Deep research**
 
 ```
-Speed: Moderate | Cost: Moderate
-Best for: Logical analysis, shows thinking process
+Speed: Several minutes | Cost: Highest
+Best for: Comprehensive reports; xhigh for open-ended agentic work
 ```
-
-Use when you need to work through a problem systematically.
 
 ---
 
-## Quick Tool Selection
+## Quick Effort Selection
 
 ```
-Need raw URLs/links?      -> perplexity_search
-Quick question?           -> perplexity_ask
-Deep research/reports?    -> perplexity_research
-Logical problem/analysis? -> perplexity_reason
+Quick question?           -> fast
+Needs a few searches?     -> low
+Comparison / analysis?    -> medium
+Deep research/reports?    -> high
 ```
 
 ---

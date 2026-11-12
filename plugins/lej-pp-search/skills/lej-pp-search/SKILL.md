@@ -15,69 +15,59 @@ Use Perplexity for web research instead of built-in WebSearch. Perplexity search
 
 ## How to Call Perplexity
 
-All Perplexity calls use the same API endpoint. The API key is `PERPLEXITY_API_KEY` in the environment, or in `~/.claude/settings.json` under `env` (then legacy `environmentVariables`). Do not print the key.
+All Perplexity calls use the Agent API endpoint (`/v1/agent`). Sonar Chat Completions (`/chat/completions` with `sonar-*` models) was retired on September 27, 2026 and now returns `403 agent_api_migration_required`.
+
+The API key is `PERPLEXITY_API_KEY` in the environment, or in `~/.claude/settings.json` under `env` (then legacy `environmentVariables`). Do not print the key.
 
 ### Basic Call
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY"}]}'
+  -d '{"effort": "fast", "input": "YOUR_QUERY"}'
 ```
 
 ### Full Call with Parameters
 
+Search controls live on the `web_search` tool. Adding the tool keeps the effort level's other settings.
+
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "MODEL_NAME",
-    "messages": [{"role": "user", "content": "YOUR_QUERY"}],
-    "web_search_options": {"search_context_size": "medium"},
-    "search_recency_filter": "month"
+    "effort": "EFFORT",
+    "input": "YOUR_QUERY",
+    "tools": [{
+      "type": "web_search",
+      "max_results": 10,
+      "filters": {"search_recency_filter": "month", "search_domain_filter": ["docs.example.com"]}
+    }]
   }'
 ```
 
 ---
 
-## Model Selection
+## Effort Selection
 
-| Model | Use Case | Cost | Speed |
-|-------|----------|------|-------|
-| `sonar` | Quick lookups, basic facts | ~$0.005 | Fast |
-| `sonar-pro` | Quality Q&A with citations (DEFAULT) | ~$0.008 | Fast |
-| `sonar-reasoning-pro` | Complex analysis, comparisons | ~$0.01 | Moderate |
-| `sonar-deep-research` | Comprehensive reports | ~$1+ | Slow (30s-5min) |
+| Effort | Use Case | Cost (measured) | Speed (measured) |
+|--------|----------|-----------------|------------------|
+| `fast` | Quick lookups, everyday questions (DEFAULT) | ~$0.002 | ~5s |
+| `low` | Light multi-step research, current info needing a few searches | ~$0.01 | ~1 min |
+| `medium` | Multi-hop research across many sources, comparisons, tradeoffs | ~$0.02 | ~1 min |
+| `high` | Exhaustive, expert-level deep research | Higher | Several minutes |
+| `xhigh` | Open-ended agentic work (code sandbox, long tool loops) | Highest | Slowest |
 
-**Default to `sonar-pro`** for most searches. Only use `sonar-deep-research` when explicitly asked for deep/comprehensive research.
+**Default to `fast`** for most searches. Step up to `low` or `medium` when one search won't cover the question. Only use `high` or `xhigh` when explicitly asked for deep/comprehensive research.
+
+Effort levels map from the old Sonar models: `sonar` and `sonar-pro` → `fast`, `sonar-reasoning-pro` → `low`, `sonar-deep-research` → `high`.
 
 ---
 
 ## Search Parameters
 
-### search_context_size (via web_search_options)
-
-Controls how many search results are included in the context. **Higher = more thorough but more expensive.**
-
-| Value | Cost Impact | When to Use |
-|-------|-------------|-------------|
-| `"low"` | ~$0.006 | Quick facts, simple lookups, cost-conscious queries |
-| `"medium"` | ~$0.010 | DEFAULT - balanced depth for most questions |
-| `"high"` | ~$0.014 | Complex topics, comparisons, when thoroughness matters |
-
-**Usage:**
-```json
-{"web_search_options": {"search_context_size": "high"}}
-```
-
-**Guidance:**
-- Use `"low"` for simple factual queries ("What version is X?")
-- Use `"medium"` (default) for general questions
-- Use `"high"` for comparisons, analysis, or when user asks for "thorough" or "comprehensive" info
-
-### search_recency_filter
+### search_recency_filter (in web_search filters)
 
 Filters search results by time. Use when freshness matters.
 
@@ -91,7 +81,7 @@ Filters search results by time. Use when freshness matters.
 
 **Usage:**
 ```json
-{"search_recency_filter": "week"}
+{"tools": [{"type": "web_search", "filters": {"search_recency_filter": "week"}}]}
 ```
 
 **Guidance:**
@@ -99,22 +89,35 @@ Filters search results by time. Use when freshness matters.
 - Use `"month"` for recent software releases, API changes
 - Omit for stable topics (tutorials, concepts, documentation)
 
-### return_images
+### search_domain_filter (in web_search filters)
 
-Include images in the response. Use when visual content is relevant.
+Include or exclude up to 20 domains. Prefix with `-` to exclude. Use allowlist or denylist mode, not both.
 
-**Usage:**
 ```json
-{"return_images": true}
+{"tools": [{"type": "web_search", "filters": {"search_domain_filter": ["-reddit.com", "-pinterest.com"]}}]}
 ```
 
-**Guidance:**
-- Use for queries about visual topics (UI, design, places, products)
-- Skip for code, documentation, or text-focused queries
+### max_results and token budgets (on web_search)
 
-**Presenting images to users:**
+Replace Sonar's `search_context_size`. `max_results` (1-50) caps the total results; `max_tokens` and `max_tokens_per_page` cap how much page content is pulled in.
 
-When images are returned, present them as clickable markdown links:
+| Goal | Setting |
+|------|---------|
+| Quick facts, cost-conscious | `"max_results": 5` |
+| Balanced (default) | omit |
+| Thorough coverage | `"max_results": 20` |
+
+### Images (image_search tool)
+
+Replaces Sonar's `return_images`. Add the `image_search` tool when visual content is relevant:
+
+```json
+{"tools": [{"type": "image_search", "max_results": 5}]}
+```
+
+Results come back as an `image_search_results` item in `output`, each with `image_url`, `origin_url`, and optional `title`.
+
+**Presenting images to users:** Use the image title as the link label and the returned `image_url` as its target:
 
 ```markdown
 **Images:**
@@ -122,82 +125,79 @@ When images are returned, present them as clickable markdown links:
 - [Aerial view of the bridge](https://media.istockphoto.com/...)
 ```
 
-The response includes:
-- `image_url` — Direct link to the image
-- `origin_url` — Source page
-- `title` — Description (use this as the link text)
+### Long-running effort levels
 
-Use the image title as the link label and the returned `image_url` as its target.
-
-### reasoning_effort (for sonar-reasoning-pro)
-
-Controls reasoning depth. Only works with `sonar-reasoning-pro` model.
-
-| Value | When to Use |
-|-------|-------------|
-| `"low"` | Simple comparisons, quick analysis |
-| `"medium"` | DEFAULT - balanced reasoning |
-| `"high"` | Complex multi-factor decisions, deep analysis |
-
-**Usage:**
-```json
-{"model": "sonar-reasoning-pro", "reasoning_effort": "high"}
-```
+`high` and `xhigh` can take several minutes. Add `--max-time 600` to curl.
 
 ---
 
 ## Example Calls
 
-### Quick lookup (low context)
+### Quick lookup
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "What is the latest version of Node.js?"}], "web_search_options": {"search_context_size": "low"}}'
+  -d '{"effort": "fast", "input": "What is the latest version of Node.js?", "tools": [{"type": "web_search", "max_results": 5}]}'
 ```
 
 ### Recent news (recency filter)
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "Latest AI news"}], "search_recency_filter": "day"}'
+  -d '{"effort": "fast", "input": "Latest AI news", "tools": [{"type": "web_search", "filters": {"search_recency_filter": "day"}}]}'
 ```
 
-### Thorough comparison (high context + reasoning)
+### Thorough comparison
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "Compare PostgreSQL vs MySQL for a new project"}], "web_search_options": {"search_context_size": "high"}, "reasoning_effort": "high"}'
+  -d '{"effort": "medium", "input": "Compare PostgreSQL vs MySQL for a new project"}' --max-time 300
 ```
 
 ### Deep research (comprehensive)
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-deep-research", "messages": [{"role": "user", "content": "Comprehensive analysis of WebAssembly adoption"}]}' --max-time 300
+  -d '{"effort": "high", "input": "Comprehensive analysis of WebAssembly adoption"}' --max-time 600
 ```
 
 ---
 
 ## Response Format
 
-All responses include:
+Responses contain a typed `output` array, one item per step the agent took:
 
 ```json
 {
-  "choices": [{"message": {"content": "The answer with [1] inline citations"}}],
-  "citations": ["https://source1.com", "https://source2.com"],
-  "search_results": [{"title": "...", "url": "...", "snippet": "..."}],
-  "images": ["url1", "url2"],  // if return_images: true
-  "usage": {"search_context_size": "medium", "cost": {"total_cost": 0.02}}
+  "status": "completed",
+  "model": "openai/...",
+  "output": [
+    {"type": "search_results", "results": [{"id": 1, "title": "...", "url": "...", "snippet": "...", "date": "..."}]},
+    {"type": "fetch_url_results", "...": "..."},
+    {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "The answer with [1] inline citations"}]}
+  ],
+  "usage": {"cost": {"total_cost": 0.002}}
 }
+```
+
+- **Answer:** `content[].text` of the `message` item
+- **Sources:** `results[]` of every `search_results` item (there can be several). Each result's `id` matches a citation marker: `[n]` from `fast`, `[web:n]` from `low` and above
+- **Cost:** `usage.cost.total_cost`
+- Check `status` is `"completed"` and `error` is null
+
+Useful jq filters:
+
+```bash
+jq -r '.output[] | select(.type == "message") | .content[] | select(.type == "output_text") | .text'
+jq -r '.output[] | select(.type == "search_results") | .results[] | "[\(.id)] \(.title) - \(.url)"'
 ```
 
 **Always include citations in your response to the user.** Format them as markdown links.
@@ -211,7 +211,8 @@ that hook own persistence rather than creating a second Markdown copy manually.
 Its writer creates `.perplexity-research/` on the first saved result, gives each
 file a unique name, and keeps new files private to your user.
 
-Reference the saved file when reusing research. Check that it exists before
+Run curl so it prints the raw JSON; piping it through `jq` in the same command
+hides the response from the hook. Reference the saved file when reusing research. Check that it exists before
 telling the user where it was saved. If the hook did not save the response, the
 API answer is still available in the tool output. For manual recovery, format
 the query, answer, and sources as Markdown and pass it on stdin to the plugin's
@@ -225,28 +226,24 @@ if it cannot save the file.
 ## Parameter Selection Guide
 
 **For simple questions:**
-- Model: `sonar-pro`
-- Context: `low`
+- Effort: `fast`
+- `max_results`: 5
 - No recency filter
 
 **For general research:**
-- Model: `sonar-pro`
-- Context: `medium` (default)
+- Effort: `fast`, or `low` if it needs several searches
 - Recency: based on topic freshness
 
 **For comparisons/analysis:**
-- Model: `sonar-reasoning-pro`
-- Context: `high`
-- Reasoning: `medium` or `high`
-
-**For comprehensive reports:**
-- Model: `sonar-deep-research`
-- Context: (handled by model)
+- Effort: `medium`
 - Add `--max-time 300`
 
+**For comprehensive reports:**
+- Effort: `high`
+- Add `--max-time 600`
+
 **For breaking news:**
-- Model: `sonar-pro`
-- Context: `medium`
+- Effort: `fast`
 - Recency: `day` or `week`
 
 ---

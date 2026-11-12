@@ -73,19 +73,21 @@ WebSearch is blocked. Use Perplexity via curl instead.
 Do not print the API key. The command below reads PERPLEXITY_API_KEY from the environment when it is set, otherwise from ~/.claude/settings.json (`env`, then legacy `environmentVariables`).
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-pro", "messages": [{"role": "user", "content": "YOUR_QUERY_HERE"}]}'
+  -d '{"effort": "fast", "input": "YOUR_QUERY_HERE"}'
 ```
 
-**Model selection:**
-- `sonar` — Fast, cheap (~$0.005)
-- `sonar-pro` — Better quality, default choice (~$0.008)
-- `sonar-reasoning-pro` — Complex analysis (~$0.01)
-- `sonar-deep-research` — Comprehensive reports (~$1+, slow)
+Print the raw JSON (do not pipe it through jq in the same command) so the research hook can save it.
 
-**Response format:** Extract `choices[0].message.content` for the answer and `citations` array for sources.
+**Effort selection:**
+- `fast` — Quick lookups and everyday questions, default choice (~$0.002)
+- `low` — Light multi-step research
+- `medium` — Multi-hop research across many sources, comparisons
+- `high` — Exhaustive deep research (slow, use `--max-time 600`)
+
+**Response format:** The `output` array holds a `message` item (answer text in `content[].text`, with `[n]` citation markers) and a `search_results` item (sources in `results[]`; each `id` matches a marker).
 
 Perplexity searches to DISCOVER new information, not confirm existing knowledge.
 EOF

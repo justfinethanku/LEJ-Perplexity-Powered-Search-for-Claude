@@ -1,41 +1,40 @@
-# sonar-reasoning-pro (Reason)
+# medium effort (Reason)
 
-**Logical analysis with step-by-step reasoning. Use for complex comparisons and tradeoff analysis.**
+**Multi-hop research that chains evidence across many sources. Use for complex comparisons and tradeoff analysis.**
 
 ## When to Use
 
 - Problems requiring step-by-step reasoning
 - Debugging complex issues
 - Architecture decisions with tradeoffs
-- When you need to see the reasoning process
 - "Should I use X or Y?" questions
+- Questions that need wide aggregation across many sources
 
 ## Characteristics
 
 | Attribute | Value |
 |-----------|-------|
-| Model | `sonar-reasoning-pro` |
-| Speed | Moderate |
-| Cost | ~$0.01 |
-| Output | Structured reasoning + synthesized answer |
+| Effort | `medium` |
+| Speed | ~1 minute |
+| Cost | ~$0.02 |
+| Output | Structured analysis with `[web:n]` inline citations, often 100+ sources |
 
 ## How to Call
 
 ```bash
-curl -s -X POST "https://api.perplexity.ai/chat/completions" \
+curl -s "https://api.perplexity.ai/v1/agent" \
   -H "Authorization: Bearer ${PERPLEXITY_API_KEY:-$(jq -r '.env.PERPLEXITY_API_KEY // .environmentVariables.PERPLEXITY_API_KEY // empty' ~/.claude/settings.json)}" \
   -H "Content-Type: application/json" \
-  -d '{"model": "sonar-reasoning-pro", "messages": [{"role": "user", "content": "YOUR_ANALYSIS_QUESTION_HERE"}]}'
+  -d '{"effort": "medium", "input": "YOUR_ANALYSIS_QUESTION_HERE"}' \
+  --max-time 300
 ```
 
 ## Response
 
-Returns JSON with:
-- `choices[0].message.content` — Structured analysis with reasoning steps
-- `citations` — Array of source URLs
-- `search_results` — Supporting search results
-
-The response often includes visible reasoning structure with analysis of different factors and tradeoffs.
+Returns JSON with an `output` array:
+- `message` item — `content[].text` is the analysis with `[web:n]` citation markers
+- `search_results` items (several) — supporting sources; `[web:n]` matches the result whose `id` is `n`
+- `fetch_url_results` items — pages the agent read in full
 
 ## Best For
 

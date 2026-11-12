@@ -4,7 +4,7 @@
 
 This plugin intercepts Claude Code's built-in WebSearch and prompts Claude to call Perplexity with `curl`. A separate hook saves recognized responses as Markdown in your project.
 
-**Current compatibility (verified November 6, 2026):** This version still calls the legacy Sonar `/chat/completions` API. The redirect hook treats a key as configured when `PERPLEXITY_API_KEY` is set in the environment, or in `~/.claude/settings.json` under `env` or legacy `environmentVariables`. It does not print that key. The save hook still accepts a JSON **string** in `tool_response`; current Claude Code Bash events use an object with `stdout`, which this version silently skips. [PR #3](https://github.com/justfinethanku/LEJ-Perplexity-Powered-Search-for-Claude/pull/3) tracks the Agent API and response migration and is not yet merged. Installation succeeds on Claude Code 2.1.318, but that does not establish working live searches or automatic saving. See [Troubleshooting](#troubleshooting) before configuring a key.
+**Current compatibility (November 11, 2026):** Version 2.4.0 calls Perplexity's Agent API (`POST /v1/agent` with `effort` and `input`). Perplexity retired Sonar Chat Completions on September 27, 2026; older versions of this plugin get `403 agent_api_migration_required` on every search. The redirect hook treats a key as configured when `PERPLEXITY_API_KEY` is set in the environment, or in `~/.claude/settings.json` under `env` or legacy `environmentVariables`. It does not print that key. The save hook reads Claude Code's Bash `stdout` object (and a plain string) and the Agent API's typed `output` array. See [Troubleshooting](#troubleshooting) before configuring a key.
 
 The difference matters more than you'd think. When Claude searches for "React 19 new features," it's looking to validate what it learned during training. But if React 19 changed something since then? Claude's search might miss it entirely because it wasn't looking for contradictions. Perplexity has no preconceptions - it just finds what's actually out there right now.
 
@@ -74,17 +74,17 @@ Inside an interactive Claude Code session, the equivalent commands are:
 
 Start a new Claude Code session after installation. Run `/lej-pp-search:help` to confirm the plugin's commands are available.
 
-### Legacy key setup
+### Key setup
 
 Obtain an API key from the [Perplexity API console](https://www.perplexity.ai/account/api/group). API billing is separate from a consumer subscription; check [current API pricing](https://docs.perplexity.ai/docs/getting-started/pricing) before making requests. Installation and local validation do not require a key or make paid API requests.
 
-The current setup command attempts a legacy Sonar request to verify a key:
+The setup command makes one small `fast` Agent API request to verify a key:
 
 ```text
 /lej-pp-search:setup
 ```
 
-It can fail at that request even with a valid key. Claude Code loads this structure in `~/.claude/settings.json`:
+Claude Code loads this structure in `~/.claude/settings.json`:
 
 ```json
 {
@@ -104,24 +104,25 @@ After any settings change, start a new session. A redirect message proves only t
 
 ---
 
-## The Four Models
+## Effort Levels
 
-These are the legacy model names used by the current plugin, not a current Perplexity model catalog. The following costs and speeds are historical examples. For current API choices and migration guidance, use the [Perplexity quickstart](https://docs.perplexity.ai/docs/getting-started/quickstart) and PR #3.
+The Agent API picks how hard to research with `effort`, not a model name. Perplexity's [migration guide](https://docs.perplexity.ai/docs/agent-api/migrate-from-sonar/how-to) maps the old Sonar models like this: `sonar` and `sonar-pro` → `fast`, `sonar-reasoning-pro` → `low`, `sonar-deep-research` → `high`. Costs and speeds below are rough examples; check [current API pricing](https://docs.perplexity.ai/docs/getting-started/pricing).
 
-| Model | What It's For | Cost | Speed |
-|-------|---------------|------|-------|
-| `sonar` | Quick lookups, basic facts, simple questions | ~$0.005 | Fastest |
-| `sonar-pro` | Quality Q&A with citations (default) | ~$0.008 | Fast |
-| `sonar-reasoning-pro` | Step-by-step logical analysis, complex comparisons | ~$0.01 | Medium |
-| `sonar-deep-research` | Comprehensive reports, multi-source synthesis | ~$1+ | Slow (30s-2min) |
+| Effort | What It's For | Cost | Speed |
+|--------|---------------|------|-------|
+| `fast` | Quick lookups, everyday questions (default) | ~$0.002 | ~5s |
+| `low` | Light multi-step research | ~$0.01 | ~1 min |
+| `medium` | Multi-hop research, comparisons, tradeoffs | ~$0.02 | ~1 min |
+| `high` | Exhaustive deep research | Higher | Several minutes |
+| `xhigh` | Open-ended agentic work (code sandbox, long tool loops) | Highest | Slowest |
 
 **When to use what:**
-- "What's the current version of Node.js?" → `sonar` (simple fact)
-- "How do I set up authentication in Next.js 15?" → `sonar-pro` (needs good citations)
-- "Compare Prisma vs Drizzle for a high-traffic app" → `sonar-reasoning-pro` (needs analysis)
-- "Give me a complete market analysis of AI video tools" → `sonar-deep-research` (needs depth)
+- "What's the current version of Node.js?" → `fast` (simple fact)
+- "How do I set up authentication in Next.js 15?" → `fast` or `low` (needs good citations)
+- "Compare Prisma vs Drizzle for a high-traffic app" → `medium` (needs analysis)
+- "Give me a complete market analysis of AI video tools" → `high` (needs depth)
 
-Claude uses `sonar-pro` by default because it balances speed, quality, and cost well. The skill prompts guide Claude to upgrade to reasoning or deep-research when your query needs it.
+Claude uses `fast` by default. The skill prompts guide Claude to step up when your query needs it.
 
 ## Toggling Auto-Redirect
 
@@ -185,7 +186,7 @@ Both are accurate. The main difference is format: Perplexity returns faster with
 | Service | Per Query | Notes |
 |---------|-----------|-------|
 | Anthropic WebSearch | $0.01 | Plus token costs for processing |
-| Perplexity sonar-pro | ~$0.014 | All-inclusive |
+| Perplexity Agent API `fast` | ~$0.002 | Includes search |
 
 Roughly equivalent cost per query. The real win is speed and the pre-synthesized format that reduces Claude's processing time.
 
@@ -209,7 +210,7 @@ directory on the first recognized result; starting a session does not create it.
 The save hook rejects a `.perplexity-research` symlink and gives each result a unique filename, so repeated
 searches in the same second do not overwrite earlier results.
 
-The save hook writes to `.perplexity-research/` relative to its working directory when a Bash command contains `api.perplexity.ai` and its string response contains `choices[0].message.content`. It skips unrelated commands and unsupported/error response shapes without creating a file. It does not currently handle object-shaped Bash responses or Agent API output (see PR #3).
+The save hook writes to `.perplexity-research/` relative to its working directory when a Bash command contains `api.perplexity.ai` and its output is an Agent API response with answer text (`output_text`, or `output_text` parts of a `message` item in `output`). Sources come from every `search_results` item; each source keeps its `id`, which matches the `[n]` or `[web:n]` markers in the answer. It skips unrelated commands, errors, and other response shapes without creating a file. Print curl's raw JSON; piping it through `jq` in the same command hides the response from the hook.
 
 Each recognized response creates a timestamped Markdown file with:
 
@@ -227,12 +228,12 @@ Filenames contain local date and time, a sanitized query prefix (up to 50 charac
 └── 2026-11-06-10-30-00-react-features-0123456789abcdef0123456789abcdef.md
 ```
 
-Existing directory permissions are preserved. New directories use mode `0700`, and new files use mode `0600`; share files deliberately if teammates need them. Query extraction supports literal JSON curl bodies, not shell-expanded variables or `@file` request bodies.
+Existing directory permissions are preserved. New directories use mode `0700`, and new files use mode `0600`; share files deliberately if teammates need them. Query extraction reads the `input` field (a string, or the last user message in an input array) from literal JSON curl bodies, not shell-expanded variables or `@file` request bodies.
 
 ## Troubleshooting
 
 **Installation succeeds but searches fail with `403` or `agent_api_migration_required`:**
-The installed legacy endpoint is incompatible with the API. Follow PR #3; reinstalling the same version or replacing a valid key does not migrate it.
+You are running a version before 2.4.0, which still calls the retired Sonar endpoint. Update the plugin to 2.4.0 or later; replacing a valid key does not fix it.
 
 **`jq: command not found` or `python3: command not found`:**
 Run the prerequisite checks in the same environment that launches Claude Code. Installing the plugin does not install these tools.

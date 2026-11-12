@@ -33,12 +33,15 @@ class ResearchSecurityTests(unittest.TestCase):
 
     def hook(self, command=None, content='Synthetic answer [1]'):
         event = {
-            'tool_input': {'command': command or '''curl https://api.perplexity.ai/chat/completions -d '{"messages":[{"role":"user","content":"audit"}]}' '''},
-            'tool_response': json.dumps({
-                'choices': [{'message': {'content': content}}],
-                'citations': ['https://example.com/source'],
-                'search_results': [{'title': 'Source', 'url': 'https://example.com/source', 'snippet': 'Evidence'}],
-            }),
+            'tool_input': {'command': command or '''curl https://api.perplexity.ai/v1/agent -d '{"effort":"fast","input":"audit"}' '''},
+            'tool_response': {'stdout': json.dumps({
+                'output': [
+                    {'type': 'search_results', 'results': [
+                        {'id': 1, 'title': 'Source', 'url': 'https://example.com/source', 'snippet': 'Evidence'}]},
+                    {'type': 'message', 'role': 'assistant',
+                     'content': [{'type': 'output_text', 'text': content}]},
+                ],
+            }), 'stderr': ''},
         }
         return subprocess.run(['bash', str(SCRIPTS / 'save-perplexity-result.sh')],
                               input=json.dumps(event), text=True, cwd=self.project,
