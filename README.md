@@ -271,7 +271,7 @@ checkout and repeat the update, then verify the list has no errors. Keep other
 marketplace plugins and project settings in place; retry the qualified plugin at
 its original scope rather than removing the entire marketplace to recover it.
 
-The manifest declares version `2.3.1`. If Claude reports it is already current but the cached files are stale, use the [recovery checks](#recover-an-interrupted-update-or-removal) before uninstalling and reinstalling the plugin; do not edit cached source or the plugin registry JSON by hand.
+The manifest declares version `2.4.0`. If Claude reports it is already current but the cached files are stale, use the [recovery checks](#recover-an-interrupted-update-or-removal) before uninstalling and reinstalling the plugin; do not edit cached source or the plugin registry JSON by hand.
 
 ## Recover an interrupted update or removal
 
@@ -475,6 +475,7 @@ Then restart Claude Code.
 
 ## Changelog
 
+- **v2.4.0** - Perplexity Agent API (`/v1/agent`, `effort`); automatic saving reads Bash `stdout` and typed `output`
 - **v2.3.1** - Recognize `env` and `PERPLEXITY_API_KEY` without printing the key
 - **v2.3.0** - Automatic research saving via PostToolUse hook (enforced, not optional)
 - **v2.2.1** - Auto-create `.perplexity-research/` folder on session start

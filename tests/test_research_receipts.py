@@ -154,7 +154,7 @@ class ResearchReceiptTests(unittest.TestCase):
         markdown = self.save(self.curl('Receipt question'))
         for value in ('**Model:** synthetic-model', '**Effort:** fast@synthetic', '**Cost:** $0',
                       'First line [1]\n\nSecond line [2].',
-                      '1. <https://example.com/one>\n2. <https://example.com/two>',
+                      '- [1] <https://example.com/one>\n- [2] <https://example.com/two>',
                       '### First source\n**URL:** https://example.com/one\n**Snippet:** Evidence one',
                       '### Second source\n**URL:** https://example.com/two\n**Snippet:** Evidence two'):
             self.assertIn(value, markdown)
@@ -176,7 +176,7 @@ class ResearchReceiptTests(unittest.TestCase):
         ]})
         previous = -1
         for i, source in enumerate(sources):
-            self.assertIn(f"{i + 1}. <{source['url']}>", markdown)
+            self.assertIn(f"- [{i + 1}] <{source['url']}>", markdown)
             expected = (f"### {source['title']}\n**URL:** {source['url']}\n"
                         f"**Snippet:** {source['snippet']}")
             position = markdown.index(expected)
@@ -206,7 +206,7 @@ class ResearchReceiptTests(unittest.TestCase):
         })
         self.assertIn('Top-level answer [web:3]', markdown)
         self.assertNotIn('Part answer', markdown)
-        self.assertIn('3. <https://example.com/three>', markdown)
+        self.assertIn('- [3] <https://example.com/three>', markdown)
 
     def test_multiple_message_parts_are_joined(self):
         markdown = self.save(self.curl('Parts'), response={'output': [
@@ -233,6 +233,8 @@ class ResearchReceiptTests(unittest.TestCase):
             {'stdout': json.dumps({'choices': [{'message': {'content': 'old Sonar'}}]})},
             {'stdout': json.dumps({'status': 'failed', 'output': []})},
             {'stdout': json.dumps({'output': [{'type': 'search_results', 'results': []}]})},
+            {'stdout': json.dumps({'output': [{'type': 'message', 'content': 5},
+                                              {'type': 'search_results', 'results': 7}]})},
             {'stdout': 'not json'},
             {'stdout': None},
             {'stderr': 'curl failed'},

@@ -85,7 +85,7 @@ Print the raw JSON (do not pipe it through jq in the same command) so the resear
 - `fast` — Quick lookups and everyday questions, default choice (~$0.002)
 - `low` — Light multi-step research
 - `medium` — Multi-hop research across many sources, comparisons
-- `high` — Exhaustive deep research (slow, use `--max-time 600`)
+- `high` / `xhigh` — Exhaustive deep research (slow: use `--max-time 600` and a Bash tool `timeout` of 600000)
 
 **Response format:** The `output` array holds a `message` item (answer text in `content[].text`, with `[n]` citation markers) and a `search_results` item (sources in `results[]`; each `id` matches a marker).
 

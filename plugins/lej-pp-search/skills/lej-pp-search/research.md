@@ -31,7 +31,7 @@ curl -s "https://api.perplexity.ai/v1/agent" \
   --max-time 600
 ```
 
-**Important:** Use `--max-time 600` to allow for the longer response time.
+**Important:** Use `--max-time 600` and set the Bash tool `timeout` to `600000` (its default limit is 2 minutes) to allow for the longer response time.
 
 ## Response
 

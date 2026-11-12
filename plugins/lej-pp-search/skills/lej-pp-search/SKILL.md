@@ -127,7 +127,7 @@ Results come back as an `image_search_results` item in `output`, each with `imag
 
 ### Long-running effort levels
 
-`high` and `xhigh` can take several minutes. Add `--max-time 600` to curl.
+`high` and `xhigh` can take several minutes. Add `--max-time 600` to curl and set the Bash tool `timeout` to `600000`; the Bash tool's own default limit is 2 minutes.
 
 ---
 
@@ -193,7 +193,7 @@ Responses contain a typed `output` array, one item per step the agent took:
 - **Cost:** `usage.cost.total_cost`
 - Check `status` is `"completed"` and `error` is null
 
-Useful jq filters:
+To pull pieces out of a response you already have, run jq in a **separate** command on saved JSON, never piped from the curl call (the hook would not see the response):
 
 ```bash
 jq -r '.output[] | select(.type == "message") | .content[] | select(.type == "output_text") | .text'

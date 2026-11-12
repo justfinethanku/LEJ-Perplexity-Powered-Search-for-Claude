@@ -19,6 +19,16 @@ def field(record, key, default):
     return default if value is None or value is False else value
 
 
+def typed(items, kind, key):
+    """Dict entries of `key` lists across every output item of type `kind`."""
+    return [
+        entry
+        for item in items if item.get('type') == kind
+        and isinstance(item.get(key), list)
+        for entry in item[key] if isinstance(entry, dict)
+    ]
+
+
 def receipt(event):
     command = event.get('tool_input', {}).get('command', '')
     response = event.get('tool_response')
@@ -38,19 +48,12 @@ def receipt(event):
     answer = response.get('output_text')
     if not isinstance(answer, str) or not answer:
         answer = '\n\n'.join(
-            part['text']
-            for item in items if item.get('type') == 'message'
-            for part in item.get('content') or []
-            if isinstance(part, dict) and part.get('type') == 'output_text'
-            and isinstance(part.get('text'), str)
+            part['text'] for part in typed(items, 'message', 'content')
+            if part.get('type') == 'output_text' and isinstance(part.get('text'), str)
         )
     if not answer:
         return None
-    sources = [
-        result
-        for item in items if item.get('type') == 'search_results'
-        for result in item.get('results') or [] if isinstance(result, dict)
-    ]
+    sources = typed(items, 'search_results', 'results')
 
     query = import_module('research-query').research_query(command)
     model = field(response, 'model', 'unknown')
@@ -62,10 +65,10 @@ def receipt(event):
     slug = re.sub(r'[^a-z0-9-]', '', query.lower().replace(' ', '-'))[:50]
     prefix = now.strftime('%Y-%m-%d-%H-%M-%S-') + slug
 
-    # Agent API result ids match the [n] / [web:n] markers in the answer.
+    # Keep each Agent API id literal so it matches the [n] / [web:n] markers.
     citations = '\n'.join(
-        f"{field(result, 'id', i)}. <{result['url']}>"
-        for i, result in enumerate((r for r in sources if r.get('url')), 1)
+        f"- [{field(result, 'id', '?')}] <{result['url']}>"
+        for result in sources if result.get('url')
     )
     results = '\n\n'.join(
         f"### {field(result, 'title', 'Untitled')}\n"
